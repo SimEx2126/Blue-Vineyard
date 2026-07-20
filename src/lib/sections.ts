@@ -204,7 +204,12 @@ export function buildAnswersSchema(sections: EventSectionDTO[]) {
   const shape: Record<string, z.ZodTypeAny> = {};
   for (const section of sections) {
     const schema = answerSchema(section);
-    if (schema) shape[String(section.id)] = schema;
+    // A section the registrant never touched sends nothing at all; treat that as
+    // an empty answer so optional sections pass and required ones still fail on
+    // their own fields rather than on a missing key.
+    if (schema) {
+      shape[String(section.id)] = z.preprocess((v) => v ?? {}, schema);
+    }
   }
   return z.object(shape);
 }

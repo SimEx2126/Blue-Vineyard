@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ChoiceOption, EventSectionDTO, SectionConfigMap } from "@/lib/sections";
 import { couponDiscount, formatCents, type CouponInfo } from "@/lib/pricing";
 
@@ -95,6 +95,71 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
     return { subtotal, discount, total: Math.max(0, subtotal - discount) };
   }, [tiers, tierId, addOns, addOnIds, coupon]);
 
+  // ---- Steps ----
+  // Sections are grouped into a short wizard so the form isn't one long scroll.
+  // Info blocks ride along with the section they introduce.
+  const steps = useMemo(() => {
+    const GROUPS: { title: string; kinds: string[] }[] = [
+      { title: "Your details", kinds: ["personal", "address"] },
+      { title: "Medical & emergency", kinds: ["medical", "emergency"] },
+      { title: "Preferences", kinds: ["dietary", "choice", "media_consent", "custom_question"] },
+      { title: "Agreement", kinds: ["consent"] },
+    ];
+    const buckets = GROUPS.map((g) => ({ title: g.title, sections: [] as EventSectionDTO[] }));
+    let pendingInfo: EventSectionDTO[] = [];
+    for (const s of sections) {
+      if (s.kind === "text_block") {
+        pendingInfo.push(s);
+        continue;
+      }
+      const gi = GROUPS.findIndex((g) => g.kinds.includes(s.kind));
+      const target = buckets[gi === -1 ? 0 : gi];
+      target.sections.push(...pendingInfo, s);
+      pendingInfo = [];
+    }
+    const result = buckets.filter((b) => b.sections.length > 0);
+    if (pendingInfo.length && result.length) result[result.length - 1].sections.push(...pendingInfo);
+    if (tiers.length > 0) result.push({ title: "Registration & payment", sections: [] });
+    return result;
+  }, [sections, tiers]);
+
+  const [stepIndex, setStepIndex] = useState(0);
+  const currentStep = steps[Math.min(stepIndex, steps.length - 1)];
+  const isLastStep = stepIndex >= steps.length - 1;
+  const isPaymentStep = isLastStep && tiers.length > 0;
+  const formRef = useRef<HTMLFormElement>(null);
+  const stepRef = useRef<HTMLDivElement>(null);
+
+  // Let the browser's own validation gate each step.
+  function validateStep() {
+    const fields = stepRef.current?.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >("input, select, textarea");
+    for (const field of fields ?? []) {
+      if (!field.checkValidity()) {
+        field.reportValidity();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function scrollToForm() {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function goNext() {
+    if (!validateStep()) return;
+    setStepIndex((i) => Math.min(i + 1, steps.length - 1));
+    scrollToForm();
+  }
+
+  function goBack() {
+    setError(null);
+    setStepIndex((i) => Math.max(i - 1, 0));
+    scrollToForm();
+  }
+
   async function applyCoupon() {
     setCouponMsg(null);
     setCoupon(null);
@@ -115,6 +180,11 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Enter on an earlier step advances rather than submitting.
+    if (!isLastStep) {
+      goNext();
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -528,17 +598,39 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
   };
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 space-y-8">
-      {sections.map((s) => (
-        <section key={s.id}>
-          {sectionTitle(s) && (
-            <h3 className="mb-3 text-base font-semibold text-zinc-900">{sectionTitle(s)}</h3>
-          )}
-          {renderSection(s)}
-        </section>
-      ))}
+    <form ref={formRef} onSubmit={onSubmit} className="mt-6 scroll-mt-6">
+      {steps.length > 1 && (
+        <div className="mb-6">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-base font-semibold text-zinc-900">{currentStep.title}</h3>
+            <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Step {stepIndex + 1} of {steps.length}
+            </span>
+          </div>
+          <div className="mt-2 flex gap-1.5" aria-hidden>
+            {steps.map((s, i) => (
+              <span
+                key={s.title}
+                className={`h-1 flex-1 rounded-full ${
+                  i <= stepIndex ? "bg-teal-700" : "bg-zinc-200"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-      {tiers.length > 0 && (
+      <div ref={stepRef} className="space-y-8">
+        {currentStep.sections.map((s) => (
+          <section key={s.id}>
+            {sectionTitle(s) && (
+              <h4 className="mb-3 text-sm font-semibold text-zinc-900">{sectionTitle(s)}</h4>
+            )}
+            {renderSection(s)}
+          </section>
+        ))}
+
+      {isPaymentStep && (
         <section>
           <h3 className="mb-3 text-base font-semibold text-zinc-900">Registration options</h3>
           <div className="space-y-2">
@@ -628,18 +720,40 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
       )}
 
       {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {error}
-        </p>
-      )}
+          <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {error}
+          </p>
+        )}
+      </div>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-lg bg-teal-700 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:opacity-50"
-      >
-        {submitting ? "Submitting…" : "Continue to payment"}
-      </button>
+      <div className="mt-8 flex items-center gap-3 border-t border-zinc-200 pt-6">
+        {stepIndex > 0 && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="rounded-lg border border-zinc-300 px-5 py-3 text-sm font-medium hover:bg-zinc-100"
+          >
+            Back
+          </button>
+        )}
+        {isLastStep ? (
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-lg bg-teal-700 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:opacity-50"
+          >
+            {submitting ? "Submitting…" : tiers.length > 0 ? "Continue to payment" : "Submit registration"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={goNext}
+            className="rounded-lg bg-teal-700 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-800"
+          >
+            Next
+          </button>
+        )}
+      </div>
     </form>
   );
 }

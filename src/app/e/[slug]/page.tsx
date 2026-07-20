@@ -43,20 +43,17 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
 
   return (
     <article>
-      {event.heroImageUrl ? (
+      {/* Events without a poster just start at the heading — no placeholder banner. */}
+      {event.heroImageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={event.heroImageUrl}
           alt={event.title}
-          className="max-h-[420px] w-full rounded-xl object-cover"
+          className="mb-6 max-h-[420px] w-full rounded-xl object-cover"
         />
-      ) : (
-        <div className="rounded-xl bg-gradient-to-br from-teal-700 to-teal-900 p-10">
-          <h1 className="text-3xl font-bold text-white sm:text-4xl">{event.title}</h1>
-        </div>
       )}
 
-      <div className="mt-6 flex flex-wrap items-baseline gap-x-6 gap-y-1">
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
         <h1 className="text-2xl font-bold tracking-tight">{event.title}</h1>
         {event.category && (
           <span className="text-xs font-medium uppercase tracking-wide text-teal-700">
