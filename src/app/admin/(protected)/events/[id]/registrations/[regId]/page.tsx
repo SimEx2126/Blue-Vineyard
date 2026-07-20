@@ -1,0 +1,163 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { and, eq } from "drizzle-orm";
+import { db, schema } from "@/db";
+import { formatCents } from "@/lib/pricing";
+import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
+
+export const dynamic = "force-dynamic";
+
+const FIELD_LABELS: Record<string, string> = {
+  firstName: "First name",
+  lastName: "Last name",
+  email: "Email",
+  phone: "Phone",
+  church: "Church",
+  street: "Street",
+  city: "City",
+  state: "State",
+  postcode: "Postcode",
+  country: "Country",
+  doctorName: "Family doctor",
+  doctorPhone: "Doctor's phone",
+  medicare: "Medicare number",
+  name: "Name",
+  relationship: "Relationship",
+  mobile: "Mobile",
+  agreed: "Agreed",
+  selected: "Selected",
+  details: "Details",
+  value: "Answer",
+};
+
+function display(value: unknown): string {
+  if (value == null || value === "") return "—";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return String(value);
+}
+
+export default async function RegistrationDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string; regId: string }>;
+}) {
+  const { id, regId } = await params;
+  const eventId = Number(id);
+  const registrationId = Number(regId);
+  if (!Number.isInteger(eventId) || !Number.isInteger(registrationId)) notFound();
+
+  const registration = await db.query.registrations.findFirst({
+    where: and(
+      eq(schema.registrations.id, registrationId),
+      eq(schema.registrations.eventId, eventId)
+    ),
+  });
+  if (!registration) notFound();
+
+  const [event, sections] = await Promise.all([
+    db.query.events.findFirst({ where: eq(schema.events.id, eventId) }),
+    db.query.eventSections.findMany({
+      where: eq(schema.eventSections.eventId, eventId),
+      orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
+    }),
+  ]);
+
+  if (!registration.readAt) {
+    await db
+      .update(schema.registrations)
+      .set({ readAt: new Date() })
+      .where(eq(schema.registrations.id, registrationId));
+  }
+
+  const answers = registration.answers as Record<string, Record<string, unknown>>;
+  const pricing = registration.pricing as {
+    tier: { label: string; amountCents: number } | null;
+    addOns: { label: string; amountCents: number }[];
+    coupon: { code: string; discountCents: number } | null;
+  };
+
+  // Resolve choice option ids to their labels for display
+  function resolveValue(section: (typeof sections)[number], field: string, value: unknown) {
+    if (section.kind === "choice" && field === "selected") {
+      const cfg = section.config as SectionConfigMap["choice"];
+      const toLabel = (v: unknown) => cfg.options.find((o) => o.id === v)?.label ?? String(v);
+      return Array.isArray(value) ? value.map(toLabel).join(", ") : toLabel(value);
+    }
+    return display(value);
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <Link
+        href={`/admin/events/${eventId}/registrations`}
+        className="text-sm text-teal-700 hover:underline"
+      >
+        ← All registrations
+      </Link>
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-2xl font-bold">{registration.contactName}</h1>
+        <span className="text-sm text-zinc-500">
+          {event?.title} · #{registration.id} · {registration.status} ·{" "}
+          {registration.createdAt.toLocaleString("en-AU")}
+        </span>
+      </div>
+
+      <div className="mt-6 space-y-6">
+        {sections
+          .filter((s) => s.kind !== "text_block")
+          .map((section) => {
+            const sectionAnswers = answers[String(section.id)] ?? {};
+            return (
+              <div key={section.id} className="rounded-xl border border-zinc-200 bg-white p-5">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                  {section.kind === "custom_question"
+                    ? (section.config as SectionConfigMap["custom_question"]).label
+                    : SECTION_LABELS[section.kind as SectionKind] ?? section.kind}
+                </h2>
+                <dl className="mt-3 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+                  {Object.entries(sectionAnswers).map(([field, value]) => (
+                    <div key={field} className="flex justify-between gap-4 sm:block">
+                      <dt className="text-zinc-500">{FIELD_LABELS[field] ?? field}</dt>
+                      <dd className="font-medium">{resolveValue(section, field, value)}</dd>
+                    </div>
+                  ))}
+                  {Object.keys(sectionAnswers).length === 0 && (
+                    <p className="text-zinc-400">No answer</p>
+                  )}
+                </dl>
+              </div>
+            );
+          })}
+
+        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Pricing</h2>
+          <dl className="mt-3 space-y-1 text-sm">
+            {pricing.tier && (
+              <div className="flex justify-between">
+                <dt>{pricing.tier.label}</dt>
+                <dd>{formatCents(pricing.tier.amountCents)}</dd>
+              </div>
+            )}
+            {pricing.addOns?.map((a) => (
+              <div key={a.label} className="flex justify-between">
+                <dt>{a.label}</dt>
+                <dd>{formatCents(a.amountCents)}</dd>
+              </div>
+            ))}
+            {pricing.coupon && (
+              <div className="flex justify-between text-teal-700">
+                <dt>Coupon {pricing.coupon.code}</dt>
+                <dd>−{formatCents(pricing.coupon.discountCents)}</dd>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-zinc-200 pt-2 font-semibold">
+              <dt>Total</dt>
+              <dd>{formatCents(registration.amountCents)}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  );
+}
