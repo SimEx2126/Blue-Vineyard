@@ -48,7 +48,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
       <div
         className={
           event.heroImageUrl
-            ? "lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start lg:gap-12"
+            ? "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-12"
             : "mx-auto max-w-3xl"
         }
       >
