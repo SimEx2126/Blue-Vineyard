@@ -4,6 +4,7 @@ import { db, schema } from "@/db";
 import { assertCanEditEvent } from "@/lib/access";
 import { publicEventUrl, qrSvg } from "@/lib/qr";
 import { SharePanel } from "@/components/SharePanel";
+import { BannerField } from "@/components/BannerField";
 import { formatCents } from "@/lib/pricing";
 import { SECTION_KINDS, SECTION_LABELS, type SectionKind } from "@/lib/sections";
 import {
@@ -88,17 +89,23 @@ export default async function EditEventPage({
         </div>
       )}
 
+      {/* Details on the left, banner alongside on the right. */}
       <form
         action={updateEvent.bind(null, eventId)}
-        className="rounded-xl border border-zinc-200 bg-white p-6"
+        className="lg:grid lg:grid-cols-[1fr_18rem] lg:items-start lg:gap-6"
       >
-        <EventFields event={event} />
-        <button
-          type="submit"
-          className="mt-6 rounded-lg bg-teal-700 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-800"
-        >
-          Save event
-        </button>
+        <div className="rounded-xl border border-zinc-200 bg-white p-6">
+          <EventFields event={event} />
+          <button
+            type="submit"
+            className="mt-6 rounded-lg bg-teal-700 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+          >
+            Save event
+          </button>
+        </div>
+        <div className="mt-6 lg:mt-0">
+          <BannerField name="heroImageUrl" defaultValue={event.heroImageUrl ?? ""} />
+        </div>
       </form>
 
       {/* Sections */}

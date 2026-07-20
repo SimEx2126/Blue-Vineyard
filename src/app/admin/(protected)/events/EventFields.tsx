@@ -1,5 +1,4 @@
 import type { schema } from "@/db";
-import { BannerField } from "@/components/BannerField";
 
 type EventRow = typeof schema.events.$inferSelect;
 
@@ -32,9 +31,6 @@ export function EventFields({ event }: { event?: EventRow }) {
         Location
         <input name="location" defaultValue={event?.location ?? ""} className={input} />
       </label>
-      <div className="sm:col-span-2">
-        <BannerField name="heroImageUrl" defaultValue={event?.heroImageUrl ?? ""} />
-      </div>
       <div className="sm:col-span-2">
         <label className={label}>
           Description
