@@ -3,10 +3,10 @@
 import { useState } from "react";
 
 export function PayButton({
-  registrationId,
+  reference,
   amountLabel,
 }: {
-  registrationId: number;
+  reference: string;
   amountLabel: string;
 }) {
   const [busy, setBusy] = useState(false);
@@ -18,7 +18,7 @@ export function PayButton({
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ registrationId }),
+      body: JSON.stringify({ reference }),
     });
     const data = await res.json();
     if (!res.ok) {

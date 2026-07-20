@@ -4,6 +4,9 @@
 
 export type CheckoutInput = {
   registrationId: number;
+  // The registration's ticket reference. Used in customer-facing URLs so they
+  // never carry a guessable sequential id.
+  reference: string;
   amountCents: number;
   currency: string;
   description: string;

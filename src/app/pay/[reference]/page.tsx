@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
+import { normaliseReference } from "@/lib/reference";
 import { PayButton } from "./PayButton";
 
 export const dynamic = "force-dynamic";
@@ -16,14 +17,17 @@ type Pricing = {
 export default async function PayPage({
   params,
 }: {
-  params: Promise<{ registrationId: string }>;
+  params: Promise<{ reference: string }>;
 }) {
-  const { registrationId } = await params;
-  const id = Number(registrationId);
-  if (!Number.isInteger(id)) notFound();
+  const { reference: raw } = await params;
+
+  // Keyed on the random reference rather than the sequential row id —
+  // otherwise walking /pay/1..N exposes every pending registrant's name.
+  const reference = normaliseReference(raw);
+  if (!reference) notFound();
 
   const registration = await db.query.registrations.findFirst({
-    where: eq(schema.registrations.id, id),
+    where: eq(schema.registrations.reference, reference),
   });
   if (!registration) notFound();
 
@@ -31,7 +35,7 @@ export default async function PayPage({
     where: eq(schema.events.id, registration.eventId),
   });
   if (registration.status === "confirmed") {
-    redirect(`/register/confirmed${event ? `?event=${event.slug}` : ""}`);
+    redirect(`/register/confirmed?ref=${registration.reference}`);
   }
   if (registration.status === "cancelled") notFound();
 
@@ -73,7 +77,10 @@ export default async function PayPage({
           </div>
         </dl>
 
-        <PayButton registrationId={registration.id} amountLabel={formatCents(registration.amountCents)} />
+        <PayButton
+          reference={registration.reference!}
+          amountLabel={formatCents(registration.amountCents)}
+        />
       </div>
     </div>
   );

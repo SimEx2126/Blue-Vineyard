@@ -167,6 +167,7 @@ export async function POST(req: Request) {
   const gateway = getGateway();
   const checkout = await gateway.createCheckout({
     registrationId: registration.id,
+    reference: registration.reference!,
     amountCents: totalCents,
     currency: "aud",
     description: `${event.title} — ${contact.name}`,

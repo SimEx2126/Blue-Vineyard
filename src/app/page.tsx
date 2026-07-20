@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ilike, or, type SQL } from "drizzle-orm";
 import { db, schema } from "@/db";
 
 export const dynamic = "force-dynamic";
@@ -15,13 +15,27 @@ function formatDateRange(start: Date | null, end: Date | null) {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; q?: string }>;
 }) {
-  const { category } = await searchParams;
+  const { category, q } = await searchParams;
+  const query = q?.trim();
+
+  // Draft and archived events must never appear here, whatever else is filtered.
+  const filters: SQL[] = [eq(schema.events.status, "published")];
+  if (category) filters.push(eq(schema.events.category, category));
+  if (query) {
+    const like = `%${query}%`;
+    filters.push(
+      or(
+        ilike(schema.events.title, like),
+        ilike(schema.events.description, like),
+        ilike(schema.events.location, like)
+      )!
+    );
+  }
+
   const events = await db.query.events.findMany({
-    where: category
-      ? and(eq(schema.events.status, "published"), eq(schema.events.category, category))
-      : eq(schema.events.status, "published"),
+    where: and(...filters),
     orderBy: (e, { asc }) => [asc(e.startsAt)],
   });
 
@@ -43,10 +57,32 @@ export default async function HomePage({
       <h1 className="text-3xl font-bold tracking-tight">Current events</h1>
       <p className="mt-1 text-zinc-500">Register for upcoming conference events.</p>
 
+      {/* GET form so a search is a shareable, bookmarkable URL. */}
+      <form className="mt-5 flex max-w-md gap-2">
+        {category && <input type="hidden" name="category" value={category} />}
+        <input
+          name="q"
+          defaultValue={query ?? ""}
+          placeholder="Search events by name, place or description"
+          className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600"
+        />
+        <button className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-100">
+          Search
+        </button>
+        {query && (
+          <Link
+            href={category ? `/?category=${encodeURIComponent(category)}` : "/"}
+            className="self-center text-sm text-zinc-500 hover:underline"
+          >
+            Clear
+          </Link>
+        )}
+      </form>
+
       {allCategories.length > 0 && (
         <div className="mt-5 flex flex-wrap gap-2">
           <Link
-            href="/"
+            href={query ? `/?q=${encodeURIComponent(query)}` : "/"}
             className={`rounded-full border px-3 py-1 text-sm ${
               !category
                 ? "border-teal-700 bg-teal-700 text-white"
@@ -58,7 +94,7 @@ export default async function HomePage({
           {allCategories.map((c) => (
             <Link
               key={c}
-              href={`/?category=${encodeURIComponent(c)}`}
+              href={`/?category=${encodeURIComponent(c)}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
               className={`rounded-full border px-3 py-1 text-sm ${
                 category === c
                   ? "border-teal-700 bg-teal-700 text-white"
@@ -118,7 +154,9 @@ export default async function HomePage({
         ))}
         {events.length === 0 && (
           <p className="col-span-full rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
-            No events in this category right now.
+            {query
+              ? `No events match “${query}”.`
+              : "No events in this category right now."}
           </p>
         )}
       </div>

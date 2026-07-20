@@ -8,7 +8,7 @@ export const fakeGateway: PaymentGateway = {
 
   async createCheckout(input: CheckoutInput): Promise<CheckoutResult> {
     return {
-      redirectUrl: `/pay/${input.registrationId}`,
+      redirectUrl: `/pay/${input.reference}`,
       gatewayRef: `fake_ch_${randomUUID().slice(0, 12)}`,
     };
   },

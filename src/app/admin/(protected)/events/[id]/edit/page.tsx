@@ -2,6 +2,8 @@ import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { assertCanEditEvent } from "@/lib/access";
+import { publicEventUrl, qrSvg } from "@/lib/qr";
+import { SharePanel } from "@/components/SharePanel";
 import { formatCents } from "@/lib/pricing";
 import { SECTION_KINDS, SECTION_LABELS, type SectionKind } from "@/lib/sections";
 import {
@@ -56,6 +58,9 @@ export default async function EditEventPage({
     db.query.coupons.findMany({ where: eq(schema.coupons.eventId, eventId) }),
   ]);
 
+  const shareUrl = publicEventUrl(event.slug);
+  const qrMarkup = await qrSvg(shareUrl);
+
   return (
     <div className="max-w-3xl space-y-10">
       <div className="flex items-center justify-between">
@@ -72,6 +77,15 @@ export default async function EditEventPage({
         <p className="rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">
           Saved.
         </p>
+      )}
+
+      {event.status === "published" ? (
+        <SharePanel url={shareUrl} qrMarkup={qrMarkup} slug={event.slug} />
+      ) : (
+        <div className="rounded-xl border border-dashed border-zinc-300 p-5 text-sm text-zinc-500">
+          <strong className="font-medium text-zinc-700">Sharing</strong> — publish this event to get
+          its direct link and QR code. Draft events are not visible to registrants.
+        </div>
       )}
 
       <form
