@@ -155,8 +155,10 @@ function answerSchema(section: EventSectionDTO): z.ZodTypeAny | null {
     case "emergency":
       return z.object({ name: str(), relationship: str(), mobile: str() });
     case "consent":
+      // Unticked checkboxes send nothing, so an optional consent must tolerate
+      // a missing value rather than demanding the key be present.
       return z.object({
-        agreed: required ? z.literal(true) : z.boolean(),
+        agreed: required ? z.literal(true) : z.boolean().optional().default(false),
       });
     case "dietary": {
       const cfg = section.config as SectionConfigMap["dietary"];
@@ -186,7 +188,9 @@ function answerSchema(section: EventSectionDTO): z.ZodTypeAny | null {
     case "custom_question": {
       const cfg = section.config as SectionConfigMap["custom_question"];
       if (cfg.type === "checkbox") {
-        return z.object({ value: required ? z.literal(true) : z.boolean() });
+        return z.object({
+          value: required ? z.literal(true) : z.boolean().optional().default(false),
+        });
       }
       if (cfg.type === "select") {
         const opts = (cfg.options ?? []) as [string, ...string[]];
