@@ -46,12 +46,20 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">
           {isAdmin(user) ? "All registrations" : "Your registrations"}
         </h1>
-        <div className="text-sm text-zinc-500">
-          Net revenue: <strong className="text-zinc-900">{formatCents(revenue.total)}</strong>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-zinc-500">
+            Net revenue: <strong className="text-zinc-900">{formatCents(revenue.total)}</strong>
+          </span>
+          <Link
+            href="/admin/events/new"
+            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+          >
+            New event
+          </Link>
         </div>
       </div>
 
