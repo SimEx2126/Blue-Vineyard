@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350" role="img" aria-label="Choristers' Festival poster">
+  <defs>
+    <linearGradient id="cf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b0764"/>
+      <stop offset="1" stop-color="#7e22ce"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1350" fill="url(#cf)"/>
+  <g opacity="0.13" fill="none" stroke="#ffffff" stroke-width="5">
+    <path d="M0 300 H1080"/><path d="M0 340 H1080"/><path d="M0 380 H1080"/>
+    <path d="M0 420 H1080"/><path d="M0 460 H1080"/>
+  </g>
+  <circle cx="880" cy="1080" r="230" fill="#ffffff" opacity="0.06"/>
+  <text x="90" y="200" font-family="Helvetica, Arial, sans-serif" font-size="42" fill="#e9d5ff" letter-spacing="10">SNSW MUSIC MINISTRY</text>
+  <text x="90" y="640" font-family="Georgia, serif" font-size="130" font-style="italic" fill="#ffffff">Choristers&#8217;</text>
+  <text x="90" y="770" font-family="Helvetica, Arial, sans-serif" font-size="120" font-weight="bold" fill="#fbbf24">FESTIVAL</text>
+  <text x="90" y="870" font-family="Helvetica, Arial, sans-serif" font-size="86" font-weight="bold" fill="#ffffff">2026</text>
+  <rect x="90" y="920" width="200" height="7" fill="#fbbf24"/>
+  <text x="90" y="1010" font-family="Georgia, serif" font-size="54" font-style="italic" fill="#e9d5ff">Sing to the Lord a new song</text>
+  <text x="90" y="1140" font-family="Helvetica, Arial, sans-serif" font-size="44" fill="#e9d5ff">12 &#8211; 13 SEPTEMBER 2026</text>
+  <text x="90" y="1205" font-family="Helvetica, Arial, sans-serif" font-size="44" fill="#e9d5ff">WAGGA WAGGA, NSW</text>
+  <rect x="90" y="1250" width="430" height="76" rx="38" fill="#fbbf24"/>
+  <text x="305" y="1300" font-family="Helvetica, Arial, sans-serif" font-size="34" font-weight="bold" fill="#3b0764" text-anchor="middle">REGISTER YOUR CHOIR</text>
+</svg>

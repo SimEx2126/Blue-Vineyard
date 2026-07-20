@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350" role="img" aria-label="Camp Cookery Course poster">
+  <defs>
+    <linearGradient id="cc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7c2d12"/>
+      <stop offset="1" stop-color="#c2410c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1350" fill="url(#cc)"/>
+  <circle cx="200" cy="260" r="180" fill="#fed7aa" opacity="0.12"/>
+  <path d="M540 980 l70 130 h-140 z" fill="#fbbf24" opacity="0.5"/>
+  <path d="M640 1010 l60 100 h-120 z" fill="#fbbf24" opacity="0.35"/>
+  <path d="M440 1010 l60 100 h-120 z" fill="#fbbf24" opacity="0.35"/>
+  <text x="90" y="220" font-family="Helvetica, Arial, sans-serif" font-size="42" fill="#fed7aa" letter-spacing="10">SNSW CAMP MINISTRIES</text>
+  <text x="90" y="450" font-family="Georgia, serif" font-size="140" font-style="italic" fill="#ffffff">Camp</text>
+  <text x="90" y="590" font-family="Helvetica, Arial, sans-serif" font-size="118" font-weight="bold" fill="#fbbf24">COOKERY</text>
+  <text x="90" y="690" font-family="Helvetica, Arial, sans-serif" font-size="70" font-weight="bold" fill="#ffffff">COURSE</text>
+  <rect x="90" y="740" width="200" height="7" fill="#fbbf24"/>
+  <text x="90" y="830" font-family="Georgia, serif" font-size="50" font-style="italic" fill="#fed7aa">Feed a camp of two hundred</text>
+  <text x="90" y="1180" font-family="Helvetica, Arial, sans-serif" font-size="44" fill="#fed7aa">28 &#8211; 30 AUGUST 2026</text>
+  <text x="90" y="1245" font-family="Helvetica, Arial, sans-serif" font-size="44" fill="#fed7aa">STUARTS POINT, NSW</text>
+  <text x="90" y="1310" font-family="Helvetica, Arial, sans-serif" font-size="34" font-weight="bold" fill="#fbbf24">LIMITED TO 24 PLACES</text>
+</svg>

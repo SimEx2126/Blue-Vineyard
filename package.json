@@ -11,7 +11,8 @@
     "db:stop": "pg_ctl -D .pgdata stop",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seed.ts",
-    "db:seed-users": "tsx src/db/seed-users.ts"
+    "db:seed-users": "tsx src/db/seed-users.ts",
+    "db:seed-church-events": "tsx src/db/seed-church-events.ts"
   },
   "dependencies": {
     "better-auth": "^1.6.23",
