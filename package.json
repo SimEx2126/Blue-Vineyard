@@ -10,9 +10,11 @@
     "db:start": "pg_ctl -D .pgdata -l .pgdata/log.txt -o \"-p 5433\" start",
     "db:stop": "pg_ctl -D .pgdata stop",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "db:seed-users": "tsx src/db/seed-users.ts"
   },
   "dependencies": {
+    "better-auth": "^1.6.23",
     "drizzle-orm": "^0.45.2",
     "iron-session": "^8.0.4",
     "next": "16.2.10",

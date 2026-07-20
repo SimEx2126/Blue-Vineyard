@@ -1,11 +1,18 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
+import { isAdmin, requireUser } from "@/lib/access";
 import { refundPayment } from "../actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
+  const user = await requireUser();
+
+  // The ledger is joined through to the event so it can be limited to the
+  // organiser's own events; it exposes registrant names alongside amounts.
+  const ownerFilter = isAdmin(user) ? undefined : eq(schema.events.ownerId, user.id);
+
   const rows = await db
     .select({
       payment: schema.payments,
@@ -18,6 +25,7 @@ export default async function PaymentsPage() {
       eq(schema.payments.registrationId, schema.registrations.id)
     )
     .innerJoin(schema.events, eq(schema.registrations.eventId, schema.events.id))
+    .where(and(ownerFilter))
     .orderBy(desc(schema.payments.createdAt))
     .limit(200);
 

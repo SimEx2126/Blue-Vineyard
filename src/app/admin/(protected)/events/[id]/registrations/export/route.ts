@@ -1,6 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { requireAdmin } from "@/lib/auth";
+import { assertCanEditEvent } from "@/lib/access";
 import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
 
 function csvCell(value: unknown): string {
@@ -14,12 +14,13 @@ function csvCell(value: unknown): string {
 }
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
   const { id } = await ctx.params;
   const eventId = Number(id);
 
-  const event = await db.query.events.findFirst({ where: eq(schema.events.id, eventId) });
-  if (!event) return new Response("Not found", { status: 404 });
+  // Route handlers do not run the (protected) layout, so this check is the
+  // only thing standing in front of a CSV of every registrant's medical
+  // details and Medicare numbers.
+  const { event } = await assertCanEditEvent(eventId);
 
   const [sections, registrations] = await Promise.all([
     db.query.eventSections.findMany({

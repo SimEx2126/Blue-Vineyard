@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/db";
-import { requireAdmin } from "@/lib/auth";
+import { assertCanEditEvent, requireUser } from "@/lib/access";
 import { getGateway } from "@/lib/payments";
 import {
   parseSectionConfig,
@@ -37,7 +37,10 @@ function dollarsToCents(fd: FormData, key: string) {
   return n == null ? null : Math.round(n * 100);
 }
 
-async function orgId() {
+// The signed-in user's org, falling back to the only org for accounts seeded
+// before orgId existed. Never "whichever row comes back first".
+async function orgIdFor(user: { orgId: number | null }) {
+  if (user.orgId != null) return user.orgId;
   const org = await db.query.orgs.findFirst();
   if (!org) throw new Error("No org configured — run the seed.");
   return org.id;
@@ -62,19 +65,19 @@ function eventFieldsFrom(fd: FormData) {
 }
 
 export async function createEvent(fd: FormData) {
-  await requireAdmin();
+  const user = await requireUser();
   const fields = eventFieldsFrom(fd);
   if (!fields.slug || !fields.title) redirect("/admin/events/new?error=Slug+and+title+are+required");
   const [event] = await db
     .insert(schema.events)
-    .values({ ...fields, orgId: await orgId() })
+    .values({ ...fields, orgId: await orgIdFor(user), ownerId: user.id })
     .returning();
   revalidatePath("/admin/events");
   redirect(`/admin/events/${event.id}/edit`);
 }
 
 export async function updateEvent(eventId: number, fd: FormData) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   const fields = eventFieldsFrom(fd);
   await db.update(schema.events).set(fields).where(eq(schema.events.id, eventId));
   revalidatePath(`/admin/events/${eventId}/edit`);
@@ -82,7 +85,7 @@ export async function updateEvent(eventId: number, fd: FormData) {
 }
 
 export async function deleteEvent(eventId: number) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   const regs = await db.query.registrations.findMany({
     where: eq(schema.registrations.eventId, eventId),
     columns: { id: true },
@@ -98,7 +101,7 @@ export async function deleteEvent(eventId: number) {
 // ---- Sections ----
 
 export async function addSection(eventId: number, fd: FormData) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   const kind = str(fd, "kind") as SectionKind | null;
   if (!kind || !SECTION_KINDS.includes(kind)) return;
   const existing = await db.query.eventSections.findMany({
@@ -115,7 +118,7 @@ export async function addSection(eventId: number, fd: FormData) {
 }
 
 export async function updateSection(eventId: number, sectionId: number, fd: FormData) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   const section = await db.query.eventSections.findFirst({
     where: and(eq(schema.eventSections.id, sectionId), eq(schema.eventSections.eventId, eventId)),
   });
@@ -138,7 +141,7 @@ export async function updateSection(eventId: number, sectionId: number, fd: Form
 }
 
 export async function deleteSection(eventId: number, sectionId: number) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   await db
     .delete(schema.eventSections)
     .where(and(eq(schema.eventSections.id, sectionId), eq(schema.eventSections.eventId, eventId)));
@@ -148,7 +151,7 @@ export async function deleteSection(eventId: number, sectionId: number) {
 // ---- Pricing ----
 
 export async function addTier(eventId: number, fd: FormData) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   const label = str(fd, "label");
   const amount = dollarsToCents(fd, "amount");
   if (!label || amount == null) return;
@@ -167,7 +170,7 @@ export async function addTier(eventId: number, fd: FormData) {
 }
 
 export async function deleteTier(eventId: number, tierId: number) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   await db
     .delete(schema.priceTiers)
     .where(and(eq(schema.priceTiers.id, tierId), eq(schema.priceTiers.eventId, eventId)));
@@ -175,7 +178,7 @@ export async function deleteTier(eventId: number, tierId: number) {
 }
 
 export async function addAddOn(eventId: number, fd: FormData) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   const label = str(fd, "label");
   const amount = dollarsToCents(fd, "amount");
   if (!label || amount == null) return;
@@ -184,7 +187,7 @@ export async function addAddOn(eventId: number, fd: FormData) {
 }
 
 export async function deleteAddOn(eventId: number, addOnId: number) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   await db
     .delete(schema.addOns)
     .where(and(eq(schema.addOns.id, addOnId), eq(schema.addOns.eventId, eventId)));
@@ -192,7 +195,7 @@ export async function deleteAddOn(eventId: number, addOnId: number) {
 }
 
 export async function addCoupon(eventId: number, fd: FormData) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   const code = str(fd, "code");
   const type = str(fd, "type");
   const value = num(fd, "value");
@@ -208,7 +211,7 @@ export async function addCoupon(eventId: number, fd: FormData) {
 }
 
 export async function deleteCoupon(eventId: number, couponId: number) {
-  await requireAdmin();
+  await assertCanEditEvent(eventId);
   await db
     .delete(schema.coupons)
     .where(and(eq(schema.coupons.id, couponId), eq(schema.coupons.eventId, eventId)));
@@ -218,7 +221,7 @@ export async function deleteCoupon(eventId: number, couponId: number) {
 // ---- Payments ----
 
 export async function refundPayment(paymentId: number) {
-  await requireAdmin();
+  await requireUser();
   const payment = await db.query.payments.findFirst({
     where: and(
       eq(schema.payments.id, paymentId),
@@ -227,6 +230,15 @@ export async function refundPayment(paymentId: number) {
     ),
   });
   if (!payment) return;
+  // A payment id alone says nothing about who may refund it. Walk to the
+  // owning event and check that, or any organiser could refund and cancel
+  // another ministry's registration.
+  const registration = await db.query.registrations.findFirst({
+    where: eq(schema.registrations.id, payment.registrationId),
+    columns: { eventId: true },
+  });
+  if (!registration) return;
+  await assertCanEditEvent(registration.eventId);
   const gateway = getGateway();
   const refund = await gateway.refund(payment.gatewayRef ?? "", payment.amountCents);
   await db
@@ -253,7 +265,13 @@ export async function refundPayment(paymentId: number) {
 // ---- Registrations ----
 
 export async function markRegistrationRead(registrationId: number) {
-  await requireAdmin();
+  await requireUser();
+  const registration = await db.query.registrations.findFirst({
+    where: eq(schema.registrations.id, registrationId),
+    columns: { eventId: true },
+  });
+  if (!registration) return;
+  await assertCanEditEvent(registration.eventId);
   await db
     .update(schema.registrations)
     .set({ readAt: new Date() })

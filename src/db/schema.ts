@@ -8,6 +8,7 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
+import { user } from "./auth-schema";
 
 // Every table carries org_id so multi-tenant is a migration, not a rewrite.
 
@@ -18,11 +19,17 @@ export const orgs = pgTable("orgs", {
   brandColor: text("brand_color"),
 });
 
+// Accounts live in auth-schema.ts, owned by Better Auth (user/session/account).
+// The `user` table there carries our extra orgId and role fields.
+
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
   orgId: integer("org_id")
     .notNull()
     .references(() => orgs.id),
+  // The organiser who created and manages this event. Text, because Better
+  // Auth issues string ids rather than serials.
+  ownerId: text("owner_id").references(() => user.id),
   slug: varchar("slug", { length: 200 }).notNull().unique(),
   title: text("title").notNull(),
   category: text("category"),

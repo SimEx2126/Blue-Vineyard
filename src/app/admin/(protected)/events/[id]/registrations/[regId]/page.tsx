@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
 import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
+import { assertCanEditEvent } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,11 @@ export default async function RegistrationDetailPage({
   const { id, regId } = await params;
   const eventId = Number(id);
   const registrationId = Number(regId);
-  if (!Number.isInteger(eventId) || !Number.isInteger(registrationId)) notFound();
+  if (!Number.isInteger(registrationId)) notFound();
+
+  // This page renders Medicare number, doctor name and phone — gate it before
+  // reading anything.
+  await assertCanEditEvent(eventId);
 
   const registration = await db.query.registrations.findFirst({
     where: and(

@@ -1,19 +1,39 @@
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { nextCookies } from "better-auth/next-js";
+import { db } from "@/db";
+import * as authSchema from "@/db/auth-schema";
 
-type SessionData = { admin?: boolean };
-
-export async function getSession() {
-  const store = await cookies();
-  return getIronSession<SessionData>(store, {
-    cookieName: "ae_admin",
-    password: process.env.SESSION_SECRET!,
-    cookieOptions: { secure: process.env.NODE_ENV === "production" },
-  });
-}
-
-export async function requireAdmin() {
-  const session = await getSession();
-  if (!session.admin) redirect("/admin/login");
-}
+/**
+ * Authentication is delegated to Better Auth — sessions, password hashing,
+ * and (later) password reset and social sign-in.
+ *
+ * Authorisation is *not* handled here. Who may see which event's registrants
+ * lives in src/lib/access.ts, because it depends on event ownership rather
+ * than on identity alone.
+ */
+export const auth = betterAuth({
+  database: drizzleAdapter(db, { provider: "pg", schema: authSchema }),
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 10,
+    // Sign-up stays enabled so the server-side API can create accounts, but
+    // the public /api/auth/sign-up endpoint is gated to admins in the route
+    // handler — there is no outbound mail yet, so nobody self-registers.
+    disableSignUp: false,
+  },
+  user: {
+    additionalFields: {
+      // Which conference/church this person belongs to.
+      orgId: { type: "number", required: false, input: false },
+      // admin sees every event and manages users; organiser sees their own.
+      role: { type: "string", required: false, defaultValue: "organiser", input: false },
+    },
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+  },
+  // Must be last: lets server actions set the session cookie.
+  plugins: [nextCookies()],
+});

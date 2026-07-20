@@ -1,17 +1,21 @@
 import Link from "next/link";
-import { db } from "@/db";
+import { eq } from "drizzle-orm";
+import { db, schema } from "@/db";
+import { isAdmin, requireUser } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminEventsPage() {
+  const user = await requireUser();
   const events = await db.query.events.findMany({
+    where: isAdmin(user) ? undefined : eq(schema.events.ownerId, user.id),
     orderBy: (e, { desc }) => [desc(e.createdAt)],
   });
 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Events</h1>
+        <h1 className="text-2xl font-bold">{isAdmin(user) ? "All events" : "Your events"}</h1>
         <Link
           href="/admin/events/new"
           className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"

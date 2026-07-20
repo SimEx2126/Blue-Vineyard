@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { assertCanEditEvent } from "@/lib/access";
 import { formatCents } from "@/lib/pricing";
 import { SECTION_KINDS, SECTION_LABELS, type SectionKind } from "@/lib/sections";
 import {
@@ -38,10 +38,7 @@ export default async function EditEventPage({
   const { id } = await params;
   const { error, saved } = await searchParams;
   const eventId = Number(id);
-  if (!Number.isInteger(eventId)) notFound();
-
-  const event = await db.query.events.findFirst({ where: eq(schema.events.id, eventId) });
-  if (!event) notFound();
+  const { event } = await assertCanEditEvent(eventId);
 
   const [sections, tiers, addOns, coupons] = await Promise.all([
     db.query.eventSections.findMany({
