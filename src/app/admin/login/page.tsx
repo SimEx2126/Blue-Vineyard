@@ -1,5 +1,8 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { APIError } from "better-auth/api";
+import { db, authSchema } from "@/db";
 import { auth } from "@/lib/auth";
 
 async function login(formData: FormData) {
@@ -17,6 +20,18 @@ async function login(formData: FormData) {
     // "wrong password" would turn this form into an account-enumeration tool.
     if (err instanceof APIError) redirect("/admin/login?error=1");
     throw err;
+  }
+
+  // A deactivated account would otherwise sign in successfully and then be
+  // bounced straight back here by the per-request check, which reads as a
+  // broken login rather than a closed account.
+  const account = await db.query.user.findFirst({
+    where: eq(authSchema.user.email, email),
+    columns: { active: true },
+  });
+  if (account && account.active === false) {
+    await auth.api.signOut({ headers: await headers() });
+    redirect("/admin/login?error=inactive");
   }
 
   redirect("/admin");
@@ -47,7 +62,13 @@ export default async function LoginPage({
             <span className="text-sm font-medium text-zinc-700">Password</span>
             <input type="password" name="password" required className={input} />
           </label>
-          {error && <p className="text-sm text-red-600">Incorrect email or password.</p>}
+          {error === "inactive" ? (
+            <p className="text-sm text-red-600">
+              This account has been deactivated. Contact the conference office.
+            </p>
+          ) : (
+            error && <p className="text-sm text-red-600">Incorrect email or password.</p>
+          )}
           <button
             type="submit"
             className="w-full rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"

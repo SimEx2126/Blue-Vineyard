@@ -20,18 +20,25 @@ export type CurrentUser = {
   email: string;
   orgId: number | null;
   role: string;
+  active: boolean;
 };
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return null;
-  const u = session.user as unknown as CurrentUser;
+  const u = session.user as unknown as Partial<CurrentUser> & { id: string };
+
+  // Checked per request rather than only at sign-in, so deactivating someone
+  // takes effect immediately instead of when their session happens to expire.
+  if (u.active === false) return null;
+
   return {
     id: u.id,
-    name: u.name,
-    email: u.email,
+    name: u.name ?? "",
+    email: u.email ?? "",
     orgId: u.orgId ?? null,
     role: u.role ?? "organiser",
+    active: true,
   };
 }
 

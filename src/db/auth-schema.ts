@@ -21,6 +21,7 @@ export const user = pgTable("user", {
     .notNull(),
   orgId: integer("org_id"),
   role: text("role").default("organiser"),
+  active: boolean("active").default(true),
 });
 
 export const session = pgTable(

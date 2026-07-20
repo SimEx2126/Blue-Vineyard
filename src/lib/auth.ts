@@ -21,6 +21,9 @@ export const auth = betterAuth({
     // the public /api/auth/sign-up endpoint is gated to admins in the route
     // handler — there is no outbound mail yet, so nobody self-registers.
     disableSignUp: false,
+    // Critical: without this, an admin creating an account would be issued
+    // the new user's session and silently swapped into their identity.
+    autoSignIn: false,
   },
   user: {
     additionalFields: {
@@ -28,6 +31,9 @@ export const auth = betterAuth({
       orgId: { type: "number", required: false, input: false },
       // admin sees every event and manages users; organiser sees their own.
       role: { type: "string", required: false, defaultValue: "organiser", input: false },
+      // Deactivated people keep their events but cannot sign in. Checked on
+      // every request, so an existing session stops working immediately.
+      active: { type: "boolean", required: false, defaultValue: true, input: false },
     },
   },
   session: {
