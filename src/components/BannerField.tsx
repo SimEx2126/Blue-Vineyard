@@ -38,7 +38,7 @@ export function BannerField({ name, defaultValue }: { name: string; defaultValue
   const shown = preview?.src || url;
 
   return (
-    <aside className="rounded-xl border border-zinc-200 bg-white p-4">
+    <aside className="flex h-full flex-col rounded-xl border border-zinc-200 bg-white p-6">
       <h2 className="text-sm font-semibold text-zinc-900">Event banner</h2>
       <p className="mt-1 text-xs text-zinc-500">
         Portrait posters work best — this is what people see on the events page.
@@ -68,13 +68,15 @@ export function BannerField({ name, defaultValue }: { name: string; defaultValue
           setDragging(false);
           takeFile(e.dataTransfer.files?.[0]);
         }}
-        className={`mt-3 flex aspect-[4/5] w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed text-center transition ${
+        // Grows to fill the column so the panel matches the form's height,
+        // rather than a fixed aspect ratio that would run to ~750px at this width.
+        className={`mt-3 flex min-h-[18rem] w-full flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed p-3 text-center transition ${
           dragging ? "border-teal-600 bg-teal-50" : "border-zinc-300 bg-zinc-50 hover:border-zinc-400"
         }`}
       >
         {shown ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={shown} alt="Banner preview" className="h-full w-full object-contain" />
+          <img src={shown} alt="Banner preview" className="max-h-full max-w-full object-contain" />
         ) : (
           <div className="px-3">
             <p className="text-sm font-medium text-zinc-600">Drop an image here</p>

@@ -63,7 +63,7 @@ export default async function EditEventPage({
   const qrMarkup = await qrSvg(shareUrl);
 
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="space-y-10">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Edit: {event.title}</h1>
         <Link href={`/e/${event.slug}`} className="text-sm text-teal-700 hover:underline">
@@ -92,7 +92,7 @@ export default async function EditEventPage({
       {/* Details on the left, banner alongside on the right. */}
       <form
         action={updateEvent.bind(null, eventId)}
-        className="lg:grid lg:grid-cols-[1fr_18rem] lg:items-start lg:gap-6"
+        className="lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-6"
       >
         <div className="rounded-xl border border-zinc-200 bg-white p-6">
           <EventFields event={event} />

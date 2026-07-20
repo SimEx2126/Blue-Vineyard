@@ -9,7 +9,7 @@ export default async function NewEventPage({
 }) {
   const { error } = await searchParams;
   return (
-    <div className="max-w-3xl">
+    <div>
       <h1 className="text-2xl font-bold">New event</h1>
       {error && (
         <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
@@ -17,7 +17,7 @@ export default async function NewEventPage({
         </p>
       )}
       {/* Details on the left, banner alongside on the right. */}
-      <form action={createEvent} className="mt-6 lg:grid lg:grid-cols-[1fr_18rem] lg:items-start lg:gap-6">
+      <form action={createEvent} className="mt-6 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-6">
         <div className="rounded-xl border border-zinc-200 bg-white p-6">
           <EventFields />
           <button
