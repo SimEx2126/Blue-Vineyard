@@ -48,8 +48,8 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={event.heroImageUrl}
-          alt={event.title}
-          className="mb-6 max-h-[420px] w-full rounded-xl object-cover"
+          alt={`${event.title} event banner`}
+          className="mx-auto mb-6 max-h-[70vh] w-auto max-w-full rounded-xl"
         />
       )}
 

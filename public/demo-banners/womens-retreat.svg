@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350" role="img" aria-label="2026 Women's Retreat poster">
+  <defs>
+    <linearGradient id="wr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7f1d1d"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1350" fill="url(#wr)"/>
+  <circle cx="880" cy="180" r="260" fill="#ffffff" opacity="0.06"/>
+  <circle cx="150" cy="1150" r="320" fill="#ffffff" opacity="0.05"/>
+  <text x="90" y="230" font-family="Georgia, serif" font-size="46" fill="#fecaca" letter-spacing="8">WOMEN'S MINISTRIES</text>
+  <text x="90" y="400" font-family="Georgia, serif" font-size="150" font-style="italic" fill="#ffffff">Women's</text>
+  <text x="90" y="540" font-family="Georgia, serif" font-size="150" font-style="italic" fill="#ffffff">Retreat</text>
+  <text x="90" y="660" font-family="Georgia, serif" font-size="120" font-weight="bold" fill="#fcd34d">2026</text>
+  <rect x="90" y="730" width="180" height="6" fill="#fcd34d"/>
+  <text x="90" y="850" font-family="Helvetica, Arial, sans-serif" font-size="58" fill="#ffffff">Come As You Are</text>
+  <text x="90" y="990" font-family="Helvetica, Arial, sans-serif" font-size="46" fill="#fecaca">18 – 20 OCTOBER 2026</text>
+  <text x="90" y="1060" font-family="Helvetica, Arial, sans-serif" font-size="46" fill="#fecaca">JINDABYNE, NSW</text>
+  <rect x="90" y="1150" width="520" height="96" rx="48" fill="#ffffff"/>
+  <text x="350" y="1212" font-family="Helvetica, Arial, sans-serif" font-size="42" font-weight="bold" fill="#7f1d1d" text-anchor="middle">REGISTER NOW</text>
+</svg>

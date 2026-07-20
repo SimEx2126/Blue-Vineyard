@@ -76,14 +76,27 @@ export default async function HomePage({
           <Link
             key={event.id}
             href={`/e/${event.slug}`}
-            className="group overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md"
+            className="group overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
           >
+            {/* The organiser's banner leads the card. Posters come in all shapes,
+                so contain rather than crop — the whole graphic stays readable. */}
             {event.heroImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={event.heroImageUrl} alt="" className="h-40 w-full object-cover" />
+              <img
+                src={event.heroImageUrl}
+                alt={`${event.title} event banner`}
+                className="aspect-[4/5] w-full bg-zinc-100 object-contain"
+              />
             ) : (
-              <div className="flex h-40 w-full items-end bg-gradient-to-br from-teal-700 to-teal-900 p-4">
-                <span className="text-lg font-semibold text-white/90">{event.title}</span>
+              <div className="flex aspect-[4/5] w-full flex-col justify-end bg-gradient-to-br from-teal-700 to-teal-900 p-6">
+                {event.category && (
+                  <span className="text-xs font-medium uppercase tracking-wide text-white/70">
+                    {event.category}
+                  </span>
+                )}
+                <span className="mt-1 text-2xl font-semibold leading-tight text-white">
+                  {event.title}
+                </span>
               </div>
             )}
             <div className="p-4">
@@ -97,6 +110,9 @@ export default async function HomePage({
                 {formatDateRange(event.startsAt, event.endsAt)}
                 {event.location ? ` · ${event.location}` : ""}
               </div>
+              <span className="mt-3 inline-block text-sm font-medium text-teal-700">
+                View details &rarr;
+              </span>
             </div>
           </Link>
         ))}

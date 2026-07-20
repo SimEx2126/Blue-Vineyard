@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350" role="img" aria-label="2026 Youth Summit poster">
+  <defs>
+    <linearGradient id="ys" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1350" fill="url(#ys)"/>
+  <path d="M0 980 L1080 700 L1080 1350 L0 1350 Z" fill="#f97316" opacity="0.18"/>
+  <path d="M0 1120 L1080 880 L1080 1350 L0 1350 Z" fill="#f97316" opacity="0.25"/>
+  <text x="90" y="220" font-family="Helvetica, Arial, sans-serif" font-size="44" fill="#93c5fd" letter-spacing="10">SNSW YOUTH</text>
+  <text x="90" y="420" font-family="Helvetica, Arial, sans-serif" font-size="170" font-weight="bold" fill="#ffffff">LEADER</text>
+  <text x="90" y="580" font-family="Georgia, serif" font-size="150" font-style="italic" fill="#f97316">Summit</text>
+  <text x="90" y="700" font-family="Helvetica, Arial, sans-serif" font-size="90" font-weight="bold" fill="#ffffff">2026</text>
+  <rect x="90" y="770" width="200" height="8" fill="#f97316"/>
+  <text x="90" y="890" font-family="Helvetica, Arial, sans-serif" font-size="52" fill="#e2e8f0">Equipping the next generation</text>
+  <text x="90" y="1030" font-family="Helvetica, Arial, sans-serif" font-size="46" fill="#93c5fd">29 – 31 AUGUST 2026</text>
+  <text x="90" y="1100" font-family="Helvetica, Arial, sans-serif" font-size="46" fill="#93c5fd">CANBERRA, ACT</text>
+  <rect x="90" y="1180" width="420" height="90" rx="45" fill="#f97316"/>
+  <text x="300" y="1240" font-family="Helvetica, Arial, sans-serif" font-size="40" font-weight="bold" fill="#ffffff" text-anchor="middle">FIND OUT MORE</text>
+</svg>
