@@ -53,6 +53,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
   const header = [
     "ID",
+    "Ticket no.",
     "Submitted",
     "Status",
     "Name",
@@ -90,6 +91,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     });
     return [
       r.id,
+      csvCell(r.reference),
       r.createdAt.toISOString(),
       r.status,
       csvCell(r.contactName),

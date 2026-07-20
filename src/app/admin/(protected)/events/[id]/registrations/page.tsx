@@ -27,10 +27,14 @@ export default async function RegistrationsPage({
   });
   if (q) {
     const needle = q.toLowerCase();
+    // Searching by ticket reference is how the door desk looks someone up.
+    const refNeedle = needle.replace(/[^0-9a-z]/g, "");
     registrations = registrations.filter(
       (r) =>
         r.contactName.toLowerCase().includes(needle) ||
-        r.contactEmail.toLowerCase().includes(needle)
+        r.contactEmail.toLowerCase().includes(needle) ||
+        (refNeedle.length > 0 &&
+          (r.reference ?? "").toLowerCase().replace("-", "").includes(refNeedle))
     );
   }
 
@@ -68,7 +72,7 @@ export default async function RegistrationsPage({
             <input
               name="q"
               defaultValue={q ?? ""}
-              placeholder="Search name or email"
+              placeholder="Search name, email or ticket no."
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
             />
             <button className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100">
@@ -88,6 +92,7 @@ export default async function RegistrationsPage({
         <table className="w-full text-sm">
           <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
             <tr>
+              <th className="px-4 py-3">Ticket no.</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Status</th>
@@ -99,6 +104,9 @@ export default async function RegistrationsPage({
           <tbody className="divide-y divide-zinc-100">
             {registrations.map((r) => (
               <tr key={r.id} className={r.readAt ? "" : "bg-teal-50/40 font-medium"}>
+                <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
+                  {r.reference ?? "—"}
+                </td>
                 <td className="px-4 py-3">
                   <Link
                     href={`/admin/events/${eventId}/registrations/${r.id}`}
@@ -125,7 +133,7 @@ export default async function RegistrationsPage({
             ))}
             {registrations.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-zinc-500">
                   No registrations{q ? " matching your search" : " yet"}.
                 </td>
               </tr>

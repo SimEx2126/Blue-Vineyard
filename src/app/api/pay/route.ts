@@ -32,9 +32,14 @@ export async function POST(req: Request) {
     .set({ status: "paid" })
     .where(eq(schema.payments.id, payment.id));
 
-  const event = await confirmRegistration(body.registrationId);
+  await confirmRegistration(body.registrationId);
+
+  const registration = await db.query.registrations.findFirst({
+    where: eq(schema.registrations.id, body.registrationId),
+    columns: { reference: true },
+  });
 
   return NextResponse.json({
-    redirectUrl: `/register/confirmed${event ? `?event=${event.slug}` : ""}`,
+    redirectUrl: `/register/confirmed${registration?.reference ? `?ref=${registration.reference}` : ""}`,
   });
 }

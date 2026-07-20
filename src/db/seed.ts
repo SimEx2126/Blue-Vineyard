@@ -1,5 +1,6 @@
 import "./load-env";
 import { db, schema } from "./index";
+import { generateReference } from "../lib/reference";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -188,6 +189,7 @@ async function main() {
       .values({
         orgId: org.id,
         eventId: summit.id,
+        reference: generateReference(),
         status: "confirmed",
         contactName: name,
         contactEmail: email,

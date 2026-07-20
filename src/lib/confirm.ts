@@ -34,6 +34,10 @@ export async function confirmRegistration(registrationId: number) {
       `Hi ${registration.contactName},\n\n` +
       `Your registration for ${event?.title ?? "the event"} is confirmed.\n` +
       `Amount: ${formatCents(registration.amountCents)}\n\n` +
+      (registration.reference
+        ? `Your registration number is ${registration.reference}.\n` +
+          `Please present this number at the event entrance.\n\n`
+        : "") +
       `We look forward to seeing you there.`,
   });
   return event;

@@ -94,6 +94,8 @@ export const registrations = pgTable("registrations", {
   eventId: integer("event_id")
     .notNull()
     .references(() => events.id),
+  // Ticket code the attendee presents at the event entrance.
+  reference: varchar("reference", { length: 16 }).unique(),
   status: text("status").notNull().default("pending"), // pending | confirmed | cancelled
   contactName: text("contact_name").notNull(),
   contactEmail: text("contact_email").notNull(),

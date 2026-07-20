@@ -96,7 +96,14 @@ export default async function RegistrationDetailPage({
         ← All registrations
       </Link>
       <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-2xl font-bold">{registration.contactName}</h1>
+        <h1 className="text-2xl font-bold">
+          {registration.contactName}
+          {registration.reference && (
+            <span className="ml-3 rounded-md bg-zinc-100 px-2 py-1 font-mono text-sm font-semibold text-zinc-700">
+              {registration.reference}
+            </span>
+          )}
+        </h1>
         <span className="text-sm text-zinc-500">
           {event?.title} · #{registration.id} · {registration.status} ·{" "}
           {registration.createdAt.toLocaleString("en-AU")}

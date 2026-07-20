@@ -13,6 +13,7 @@ import {
 } from "@/lib/registration";
 import { getGateway } from "@/lib/payments";
 import { confirmRegistration } from "@/lib/confirm";
+import { generateReference } from "@/lib/reference";
 
 const bodySchema = z.object({
   eventId: z.number().int(),
@@ -145,6 +146,7 @@ export async function POST(req: Request) {
     .values({
       orgId: event.orgId,
       eventId: event.id,
+      reference: generateReference(),
       status: "pending",
       contactName: contact.name,
       contactEmail: contact.email,
@@ -159,7 +161,7 @@ export async function POST(req: Request) {
   // Free registration: confirm immediately, no payment leg.
   if (totalCents === 0) {
     await confirmRegistration(registration.id);
-    return NextResponse.json({ redirectUrl: `/register/confirmed?event=${event.slug}` });
+    return NextResponse.json({ redirectUrl: `/register/confirmed?ref=${registration.reference}` });
   }
 
   const gateway = getGateway();
