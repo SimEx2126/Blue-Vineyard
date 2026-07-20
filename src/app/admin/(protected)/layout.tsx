@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { isAdmin, requireUser } from "@/lib/access";
+import { AdminNav } from "@/components/AdminNav";
 import { headers } from "next/headers";
 
 async function logout() {
@@ -15,22 +15,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-zinc-900 px-4 py-3 text-sm text-zinc-100">
-        <nav className="flex gap-5">
-          <Link href="/admin" className="font-semibold hover:text-white">
-            Dashboard
-          </Link>
-          <Link href="/admin/events" className="hover:text-white">
-            Events
-          </Link>
-          <Link href="/admin/payments" className="hover:text-white">
-            Payments
-          </Link>
-          {isAdmin(user) && (
-            <Link href="/admin/users" className="hover:text-white">
-              People
-            </Link>
-          )}
-        </nav>
+        <AdminNav
+          items={[
+            { href: "/admin", label: "Dashboard" },
+            { href: "/admin/events", label: "Events" },
+            { href: "/admin/payments", label: "Payments" },
+            // People is admin-only, and the page itself enforces that too.
+            ...(isAdmin(user) ? [{ href: "/admin/users", label: "People" }] : []),
+          ]}
+        />
         <div className="flex items-center gap-4">
           <span className="text-zinc-400">
             {user.name}
