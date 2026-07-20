@@ -50,7 +50,7 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-bold">
           {isAdmin(user) ? "All registrations" : "Your registrations"}
         </h1>
-        <div className="flex items-center gap-4">
+        <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
           <span className="text-sm text-zinc-500">
             Net revenue: <strong className="text-zinc-900">{formatCents(revenue.total)}</strong>
           </span>
@@ -63,7 +63,69 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      {/* Phones get stacked cards. The table is 460px wide at its narrowest and
+          was being clipped by the rounded container, so Capacity and Edit were
+          not merely cramped — they were unreachable. */}
+      <div className="mt-6 space-y-3 sm:hidden">
+        {events.map((event) => {
+          const c = countByEvent.get(event.id);
+          const confirmed = c?.confirmed ?? 0;
+          return (
+            <div key={event.id} className="rounded-xl border border-zinc-200 bg-white p-4">
+              <Link
+                href={`/admin/events/${event.id}/registrations`}
+                className="font-medium hover:underline"
+              >
+                {event.title}
+              </Link>
+              <dl className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
+                <dt className="text-zinc-500">Status</dt>
+                <dd className="text-right">{event.status}</dd>
+                <dt className="text-zinc-500">Confirmed</dt>
+                <dd className="text-right">
+                  {confirmed}
+                  {c?.pending ? <span className="text-zinc-400"> (+{c.pending})</span> : null}
+                </dd>
+                <dt className="text-zinc-500">Capacity</dt>
+                <dd
+                  className={`text-right ${
+                    event.capacity != null && confirmed >= event.capacity
+                      ? "font-semibold text-red-600"
+                      : ""
+                  }`}
+                >
+                  {event.capacity != null ? `${confirmed}/${event.capacity}` : "—"}
+                </dd>
+              </dl>
+              <div className="mt-3 flex gap-4 border-t border-zinc-100 pt-3 text-sm">
+                <Link
+                  href={`/admin/events/${event.id}/registrations`}
+                  className="text-teal-700 hover:underline"
+                >
+                  Registrations
+                </Link>
+                <Link
+                  href={`/admin/events/${event.id}/edit`}
+                  className="text-teal-700 hover:underline"
+                >
+                  Edit
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+        {events.length === 0 && (
+          <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500">
+            No events yet.{" "}
+            <Link href="/admin/events/new" className="text-teal-700 hover:underline">
+              Create one
+            </Link>
+            .
+          </p>
+        )}
+      </div>
+
+      <div className="mt-6 hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white sm:block">
         <table className="w-full text-sm">
           <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
             <tr>

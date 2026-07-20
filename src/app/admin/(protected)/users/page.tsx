@@ -69,8 +69,10 @@ export default async function UsersPage({
         </p>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-        <table className="w-full text-sm">
+      {/* Scrolls sideways rather than clipping: the role and activation
+          controls sit in the last columns. */}
+      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+        <table className="w-full min-w-[36rem] text-sm">
           <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="px-4 py-3">Name</th>

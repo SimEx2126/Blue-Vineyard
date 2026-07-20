@@ -23,7 +23,63 @@ export default async function AdminEventsPage() {
           New event
         </Link>
       </div>
-      <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      {/* Cards on phones; the table below is too wide to fit and was clipping
+          its action links. */}
+      <div className="mt-6 space-y-3 sm:hidden">
+        {events.map((event) => (
+          <div key={event.id} className="rounded-xl border border-zinc-200 bg-white p-4">
+            <div className="flex gap-3">
+              {event.heroImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={event.heroImageUrl}
+                  alt=""
+                  className="h-16 w-12 shrink-0 rounded border border-zinc-200 bg-zinc-50 object-contain"
+                />
+              ) : (
+                <div className="h-16 w-12 shrink-0 rounded border border-dashed border-zinc-300" />
+              )}
+              <div className="min-w-0">
+                <p className="font-medium">{event.title}</p>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  {event.category ?? "—"}
+                  {event.startsAt ? ` · ${event.startsAt.toLocaleDateString("en-AU")}` : ""}
+                </p>
+                <span
+                  className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                    event.status === "published"
+                      ? "bg-teal-100 text-teal-800"
+                      : event.status === "draft"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-zinc-100 text-zinc-600"
+                  }`}
+                >
+                  {event.status}
+                </span>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-4 border-t border-zinc-100 pt-3 text-sm">
+              <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
+                View
+              </Link>
+              <Link
+                href={`/admin/events/${event.id}/registrations`}
+                className="text-zinc-500 hover:underline"
+              >
+                Registrations
+              </Link>
+              <Link
+                href={`/admin/events/${event.id}/edit`}
+                className="text-teal-700 hover:underline"
+              >
+                Edit
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white sm:block">
         <table className="w-full text-sm">
           <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
             <tr>

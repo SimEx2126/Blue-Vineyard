@@ -64,28 +64,71 @@ export default async function RegistrationsPage({
             {event.capacity != null && ` of ${event.capacity}`} · {registrations.length} total
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <form className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <form className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
             <input
               name="q"
               defaultValue={q ?? ""}
               placeholder="Search name, email or ticket no."
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm sm:flex-none"
             />
-            <button className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100">
+            <button className="shrink-0 rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100">
               Search
             </button>
           </form>
           <a
             href={`/admin/events/${eventId}/registrations/export`}
-            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+            className="shrink-0 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
           >
             Export CSV
           </a>
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      {/* Cards on phones — this is the screen an organiser opens at the door to
+          look someone up, so the ticket number and status must be reachable. */}
+      <div className="mt-6 space-y-3 sm:hidden">
+        {registrations.map((r) => (
+          <Link
+            key={r.id}
+            href={`/admin/events/${eventId}/registrations/${r.id}`}
+            className={`block rounded-xl border p-4 ${
+              r.readAt ? "border-zinc-200 bg-white" : "border-teal-200 bg-teal-50/40"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {r.contactName}
+                  {!r.readAt && (
+                    <span className="ml-2 rounded-full bg-teal-700 px-1.5 text-[10px] font-semibold text-white">
+                      new
+                    </span>
+                  )}
+                </p>
+                <p className="truncate text-sm text-zinc-500">{r.contactEmail}</p>
+              </div>
+              <span className="shrink-0 font-mono text-xs font-semibold text-zinc-700">
+                {r.reference}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-zinc-100 pt-3 text-sm">
+              <span>{r.status}</span>
+              <span className="text-zinc-500">
+                {paymentByReg.get(r.id) ?? (r.amountCents === 0 ? "free" : "—")}
+              </span>
+              <span className="ml-auto font-medium">{formatCents(r.amountCents)}</span>
+            </div>
+          </Link>
+        ))}
+        {registrations.length === 0 && (
+          <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500">
+            No registrations{q ? " matching your search" : " yet"}.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-6 hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white sm:block">
         <table className="w-full text-sm">
           <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
             <tr>

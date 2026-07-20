@@ -35,7 +35,8 @@ export default async function PaymentsPage() {
       <p className="mt-1 text-sm text-zinc-500">All charges and refunds, newest first.</p>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-        <table className="w-full text-sm">
+        {/* min-width keeps the columns legible; the wrapper scrolls on phones. */}
+        <table className="w-full min-w-[48rem] text-sm">
           <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="px-4 py-3">#</th>
