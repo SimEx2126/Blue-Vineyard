@@ -71,7 +71,7 @@ export default async function HomePage({
         </div>
       )}
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {events.map((event) => (
           <Link
             key={event.id}

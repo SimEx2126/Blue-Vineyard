@@ -53,6 +53,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         />
       )}
 
+      {/* The page shell is wide, but text and form fields stay at a readable
+          measure rather than stretching the full width. */}
+      <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
         <h1 className="text-2xl font-bold tracking-tight">{event.title}</h1>
         {event.category && (
@@ -119,6 +122,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             {openState.message}
           </div>
         )}
+      </div>
       </div>
     </article>
   );
