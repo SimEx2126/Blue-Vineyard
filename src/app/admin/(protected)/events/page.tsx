@@ -37,7 +37,39 @@ export default async function AdminEventsPage() {
           <tbody className="divide-y divide-zinc-100">
             {events.map((event) => (
               <tr key={event.id}>
-                <td className="px-4 py-3 font-medium">{event.title}</td>
+                <td className="px-4 py-3 font-medium">
+                  <div className="flex items-center gap-3">
+                    {/* Contain rather than crop, so a portrait poster is still
+                        recognisable at thumbnail size. */}
+                    {event.heroImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={event.heroImageUrl}
+                        alt=""
+                        className="h-14 w-11 shrink-0 rounded border border-zinc-200 bg-zinc-50 object-contain"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-14 w-11 shrink-0 items-center justify-center rounded border border-dashed border-zinc-300 text-[9px] uppercase tracking-wide text-zinc-400"
+                        title="No banner set"
+                      >
+                        No
+                        <br />
+                        image
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <span>{event.title}</span>
+                      {event.description && (
+                        // Two lines then ellipsis: enough to tell events apart
+                        // without the row growing with the copy.
+                        <p className="mt-0.5 line-clamp-2 max-w-md text-xs font-normal text-zinc-500">
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-zinc-500">{event.category ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span
