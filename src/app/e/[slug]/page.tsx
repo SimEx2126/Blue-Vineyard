@@ -42,20 +42,27 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     event.capacity != null ? event.capacity - (await countActiveRegistrations(event.id)) : null;
 
   return (
-    <article>
-      {/* Events without a poster just start at the heading — no placeholder banner. */}
+    // Banner on the left, details and registration on the right; stacked on
+    // narrow screens. Events without a poster get the single readable column.
+    <article
+      className={
+        event.heroImageUrl
+          ? "lg:grid lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-start lg:gap-10"
+          : ""
+      }
+    >
       {event.heroImageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={event.heroImageUrl}
           alt={`${event.title} event banner`}
-          className="mx-auto mb-6 max-h-[70vh] w-auto max-w-full rounded-xl"
+          className="mx-auto mb-6 w-auto max-w-full rounded-xl lg:sticky lg:top-6 lg:mb-0 lg:w-full"
         />
       )}
 
-      {/* The page shell is wide, but text and form fields stay at a readable
-          measure rather than stretching the full width. */}
-      <div className="mx-auto max-w-3xl">
+      {/* Text and form fields stay at a readable measure rather than
+          stretching the full width of the shell. */}
+      <div className={event.heroImageUrl ? "max-w-3xl" : "mx-auto max-w-3xl"}>
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
         <h1 className="text-2xl font-bold tracking-tight">{event.title}</h1>
         {event.category && (
