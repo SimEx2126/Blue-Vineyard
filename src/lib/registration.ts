@@ -111,19 +111,6 @@ export async function choiceOptionCounts(eventId: number, sectionId: number) {
   return counts;
 }
 
-export async function findValidCoupon(eventId: number, code: string) {
-  const coupon = await db.query.coupons.findFirst({
-    where: and(
-      eq(schema.coupons.eventId, eventId),
-      sql`lower(${schema.coupons.code}) = ${code.trim().toLowerCase()}`
-    ),
-  });
-  if (!coupon) return { error: "Coupon code not recognised." as string, coupon: null };
-  if (coupon.maxUses != null && coupon.uses >= coupon.maxUses) {
-    return { error: "This coupon has reached its usage limit.", coupon: null };
-  }
-  return { error: null, coupon };
-}
 
 export async function validateAddOnIds(eventId: number, ids: number[]) {
   if (ids.length === 0) return [];

@@ -87,18 +87,6 @@ export const addOns = pgTable("add_ons", {
   position: integer("position").notNull().default(0),
 });
 
-export const coupons = pgTable("coupons", {
-  id: serial("id").primaryKey(),
-  eventId: integer("event_id")
-    .notNull()
-    .references(() => events.id, { onDelete: "cascade" }),
-  code: varchar("code", { length: 60 }).notNull(),
-  type: text("type").notNull(), // percent | fixed
-  value: integer("value").notNull(), // percent (0-100) or cents
-  maxUses: integer("max_uses"),
-  uses: integer("uses").notNull().default(0),
-});
-
 export const registrations = pgTable("registrations", {
   id: serial("id").primaryKey(),
   orgId: integer("org_id")
@@ -114,8 +102,7 @@ export const registrations = pgTable("registrations", {
   contactEmail: text("contact_email").notNull(),
   answers: jsonb("answers").notNull().default({}), // keyed by section id
   tierId: integer("tier_id").references(() => priceTiers.id),
-  couponId: integer("coupon_id").references(() => coupons.id),
-  pricing: jsonb("pricing").notNull().default({}), // { tier, addOns, coupon, totalCents }
+  pricing: jsonb("pricing").notNull().default({}), // { tier, addOns, totalCents }
   amountCents: integer("amount_cents").notNull().default(0),
   // Proof of an outside payment, supplied by the registrant. A private Wasabi
   // key for an uploaded screenshot, and/or a typed reference number.

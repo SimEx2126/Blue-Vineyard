@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { ChoiceOption, EventSectionDTO, SectionConfigMap } from "@/lib/sections";
-import { couponDiscount, formatCents, type CouponInfo } from "@/lib/pricing";
+import { formatCents } from "@/lib/pricing";
 
 type TierVM = {
   id: number;
@@ -61,9 +61,6 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
     tiers.filter((t) => t.active).length === 1 ? tiers.find((t) => t.active)!.id : null
   );
   const [addOnIds, setAddOnIds] = useState<number[]>([]);
-  const [couponCode, setCouponCode] = useState("");
-  const [coupon, setCoupon] = useState<CouponInfo | null>(null);
-  const [couponMsg, setCouponMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,9 +88,8 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
     const subtotal =
       tier.amountCents +
       addOns.filter((a) => addOnIds.includes(a.id)).reduce((s, a) => s + a.amountCents, 0);
-    const discount = couponDiscount(coupon, subtotal);
-    return { subtotal, discount, total: Math.max(0, subtotal - discount) };
-  }, [tiers, tierId, addOns, addOnIds, coupon]);
+    return { subtotal, discount: 0, total: subtotal };
+  }, [tiers, tierId, addOns, addOnIds]);
 
   // ---- Steps ----
   // Sections are grouped into a short wizard so the form isn't one long scroll.
@@ -160,24 +156,6 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
     scrollToForm();
   }
 
-  async function applyCoupon() {
-    setCouponMsg(null);
-    setCoupon(null);
-    if (!couponCode.trim()) return;
-    const res = await fetch("/api/coupons/validate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId, code: couponCode }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setCouponMsg(data.error ?? "Coupon not valid.");
-      return;
-    }
-    setCoupon(data.coupon);
-    setCouponMsg(`Coupon applied: ${data.coupon.code}`);
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     // Enter on an earlier step advances rather than submitting.
@@ -196,7 +174,6 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
           answers,
           tierId,
           addOnIds,
-          couponCode: coupon ? couponCode : null,
         }),
       });
       const data = await res.json();
@@ -677,39 +654,12 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
             </div>
           )}
 
-          <div className="mt-4 flex max-w-sm gap-2">
-            <input
-              className={inputCls + " mt-0"}
-              placeholder="Coupon code"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-            />
-            <button
-              type="button"
-              onClick={applyCoupon}
-              className="whitespace-nowrap rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100"
-            >
-              Apply coupon
-            </button>
-          </div>
-          {couponMsg && (
-            <p className={`mt-1 text-sm ${coupon ? "text-teal-700" : "text-red-600"}`}>
-              {couponMsg}
-            </p>
-          )}
-
           {total && (
             <div className="mt-5 max-w-sm rounded-lg border border-zinc-200 bg-white p-4 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>{formatCents(total.subtotal)}</span>
               </div>
-              {total.discount > 0 && (
-                <div className="flex justify-between text-teal-700">
-                  <span>Discount</span>
-                  <span>−{formatCents(total.discount)}</span>
-                </div>
-              )}
               <div className="mt-2 flex justify-between border-t border-zinc-200 pt-2 font-semibold">
                 <span>Total</span>
                 <span>{formatCents(total.total)}</span>

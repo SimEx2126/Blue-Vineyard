@@ -67,7 +67,6 @@ async function generateEventSlug(title: string) {
   const base = slugify(title) || "event";
   let candidate = base;
   let n = 1;
-  // eslint-disable-next-line no-await-in-loop
   while (
     await db.query.events.findFirst({
       where: eq(schema.events.slug, candidate),
@@ -231,30 +230,6 @@ export async function deleteAddOn(eventId: number, addOnId: number) {
   await db
     .delete(schema.addOns)
     .where(and(eq(schema.addOns.id, addOnId), eq(schema.addOns.eventId, eventId)));
-  revalidatePath(`/admin/events/${eventId}/edit`);
-}
-
-export async function addCoupon(eventId: number, fd: FormData) {
-  await assertCanEditEvent(eventId);
-  const code = str(fd, "code");
-  const type = str(fd, "type");
-  const value = num(fd, "value");
-  if (!code || !type || value == null) return;
-  await db.insert(schema.coupons).values({
-    eventId,
-    code,
-    type,
-    value: type === "fixed" ? Math.round(value * 100) : Math.round(value),
-    maxUses: num(fd, "maxUses"),
-  });
-  revalidatePath(`/admin/events/${eventId}/edit`);
-}
-
-export async function deleteCoupon(eventId: number, couponId: number) {
-  await assertCanEditEvent(eventId);
-  await db
-    .delete(schema.coupons)
-    .where(and(eq(schema.coupons.id, couponId), eq(schema.coupons.eventId, eventId)));
   revalidatePath(`/admin/events/${eventId}/edit`);
 }
 

@@ -29,7 +29,6 @@ type EventSpec = {
   sections: Section[];
   tiers: Tier[];
   addOns?: { label: string; amountCents: number }[];
-  coupons?: { code: string; type: string; value: number; maxUses?: number }[];
 };
 
 const PERSONAL: Section = { kind: "personal", required: true, config: { church: true } };
@@ -112,7 +111,6 @@ const EVENTS: EventSpec[] = [
       { label: "Concert only (Sabbath afternoon)", amountCents: 1500 },
     ],
     addOns: [{ label: "Printed music pack", amountCents: 1200 }],
-    coupons: [{ code: "CHOIR10", type: "percent", value: 10, maxUses: 50 }],
   },
   {
     slug: "2026-pastors-partners-retreat",
@@ -278,7 +276,6 @@ const EVENTS: EventSpec[] = [
       { label: "Participant", amountCents: 6000, availableFrom: at(14) },
     ],
     addOns: [{ label: "Recipe folder and apron", amountCents: 2500 }],
-    coupons: [{ code: "KITCHEN25", type: "fixed", value: 2500, maxUses: 5 }],
   },
 ];
 
@@ -376,18 +373,6 @@ async function main() {
           label: a.label,
           amountCents: a.amountCents,
           position: i,
-        }))
-      );
-    }
-
-    if (spec.coupons?.length) {
-      await db.insert(schema.coupons).values(
-        spec.coupons.map((c) => ({
-          eventId: event.id,
-          code: c.code,
-          type: c.type,
-          value: c.value,
-          maxUses: c.maxUses ?? null,
         }))
       );
     }

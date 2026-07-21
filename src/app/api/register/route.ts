@@ -6,7 +6,6 @@ import { buildAnswersSchema, extractContact, type SectionConfigMap } from "@/lib
 import { computeTotal, tierIsActive } from "@/lib/pricing";
 import {
   choiceOptionCounts,
-  findValidCoupon,
   getOpenState,
   toSectionDTOs,
   validateAddOnIds,
@@ -20,7 +19,6 @@ const bodySchema = z.object({
   answers: z.record(z.string(), z.unknown()),
   tierId: z.number().int().nullable(),
   addOnIds: z.array(z.number().int()).default([]),
-  couponCode: z.string().nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -91,9 +89,8 @@ export async function POST(req: Request) {
     where: eq(schema.priceTiers.eventId, event.id),
   });
   let totalCents = 0;
-  let pricing: Record<string, unknown> = { tier: null, addOns: [], coupon: null, totalCents: 0 };
+  let pricing: Record<string, unknown> = { tier: null, addOns: [], totalCents: 0 };
   let tierRow: (typeof tiers)[number] | null = null;
-  let couponRow: typeof schema.coupons.$inferSelect | null = null;
 
   if (tiers.length > 0) {
     tierRow = tiers.find((t) => t.id === body.tierId) ?? null;
@@ -119,24 +116,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid add-on selection." }, { status: 400 });
     }
 
-    if (body.couponCode) {
-      const { error, coupon } = await findValidCoupon(event.id, body.couponCode);
-      if (error) return NextResponse.json({ error }, { status: 400 });
-      couponRow = coupon;
-    }
-
     const result = computeTotal(
       tierDTO,
-      selectedAddOns.map((a) => ({ id: a.id, label: a.label, amountCents: a.amountCents })),
-      couponRow ? { id: couponRow.id, code: couponRow.code, type: couponRow.type, value: couponRow.value } : null
+      selectedAddOns.map((a) => ({ id: a.id, label: a.label, amountCents: a.amountCents }))
     );
     totalCents = result.totalCents;
     pricing = {
       tier: { id: tierRow.id, label: tierRow.label, amountCents: tierRow.amountCents },
       addOns: selectedAddOns.map((a) => ({ id: a.id, label: a.label, amountCents: a.amountCents })),
-      coupon: couponRow
-        ? { id: couponRow.id, code: couponRow.code, discountCents: result.discountCents }
-        : null,
       totalCents,
     };
   }
@@ -152,7 +139,6 @@ export async function POST(req: Request) {
       contactEmail: contact.email,
       answers,
       tierId: tierRow?.id ?? null,
-      couponId: couponRow?.id ?? null,
       pricing,
       amountCents: totalCents,
     })

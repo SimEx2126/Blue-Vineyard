@@ -10,7 +10,6 @@ export const dynamic = "force-dynamic";
 type Pricing = {
   tier: { label: string; amountCents: number } | null;
   addOns: { label: string; amountCents: number }[];
-  coupon: { code: string; discountCents: number } | null;
   totalCents: number;
 };
 
@@ -120,12 +119,6 @@ export default async function PayPage({
               <dd>{formatCents(a.amountCents)}</dd>
             </div>
           ))}
-          {pricing.coupon && (
-            <div className="flex justify-between text-teal-700">
-              <dt>Coupon {pricing.coupon.code}</dt>
-              <dd>−{formatCents(pricing.coupon.discountCents)}</dd>
-            </div>
-          )}
           <div className="flex justify-between border-t border-zinc-200 pt-2 text-base font-semibold">
             <dt>Amount due</dt>
             <dd>{formatCents(registration.amountCents)}</dd>

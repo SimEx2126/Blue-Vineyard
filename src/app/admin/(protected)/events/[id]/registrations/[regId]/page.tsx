@@ -80,7 +80,6 @@ export default async function RegistrationDetailPage({
   const pricing = registration.pricing as {
     tier: { label: string; amountCents: number } | null;
     addOns: { label: string; amountCents: number }[];
-    coupon: { code: string; discountCents: number } | null;
   };
 
   // Resolve choice option ids to their labels for display
@@ -158,12 +157,6 @@ export default async function RegistrationDetailPage({
                 <dd>{formatCents(a.amountCents)}</dd>
               </div>
             ))}
-            {pricing.coupon && (
-              <div className="flex justify-between text-teal-700">
-                <dt>Coupon {pricing.coupon.code}</dt>
-                <dd>−{formatCents(pricing.coupon.discountCents)}</dd>
-              </div>
-            )}
             <div className="flex justify-between border-t border-zinc-200 pt-2 font-semibold">
               <dt>Total</dt>
               <dd>{formatCents(registration.amountCents)}</dd>

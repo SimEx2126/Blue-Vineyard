@@ -10,7 +10,6 @@ async function main() {
   // Wipe (dev seed is idempotent-by-reset)
   await db.delete(schema.payments);
   await db.delete(schema.registrations);
-  await db.delete(schema.coupons);
   await db.delete(schema.addOns);
   await db.delete(schema.priceTiers);
   await db.delete(schema.eventSections);
@@ -137,11 +136,6 @@ async function main() {
     { eventId: retreat.id, label: "Linen pack (sheets and towel)", amountCents: 3500, position: 0 },
   ]);
 
-  await db.insert(schema.coupons).values([
-    { eventId: retreat.id, code: "WELCOME10", type: "percent", value: 10, maxUses: 100 },
-    { eventId: retreat.id, code: "FRIENDS25", type: "fixed", value: 2500, maxUses: 1 },
-  ]);
-
   // ---- Full event (capacity reached) ----
   const [summit] = await db
     .insert(schema.events)
@@ -205,7 +199,6 @@ async function main() {
         pricing: {
           tier: { id: summitTier.id, label: summitTier.label, amountCents: summitTier.amountCents },
           addOns: [],
-          coupon: null,
           totalCents: summitTier.amountCents,
         },
         amountCents: summitTier.amountCents,

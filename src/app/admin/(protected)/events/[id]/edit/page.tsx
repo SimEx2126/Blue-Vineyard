@@ -9,11 +9,9 @@ import { formatCents } from "@/lib/pricing";
 import { SECTION_KINDS, SECTION_LABELS, type SectionKind } from "@/lib/sections";
 import {
   addAddOn,
-  addCoupon,
   addSection,
   addTier,
   deleteAddOn,
-  deleteCoupon,
   deleteEvent,
   deleteSection,
   deleteTier,
@@ -43,7 +41,7 @@ export default async function EditEventPage({
   const eventId = Number(id);
   const { event } = await assertCanEditEvent(eventId);
 
-  const [sections, tiers, addOns, coupons] = await Promise.all([
+  const [sections, tiers, addOns] = await Promise.all([
     db.query.eventSections.findMany({
       where: eq(schema.eventSections.eventId, eventId),
       orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
@@ -56,7 +54,6 @@ export default async function EditEventPage({
       where: eq(schema.addOns.eventId, eventId),
       orderBy: (a, { asc }) => [asc(a.position), asc(a.id)],
     }),
-    db.query.coupons.findMany({ where: eq(schema.coupons.eventId, eventId) }),
   ]);
 
   const shareUrl = publicEventUrl(event.slug);
@@ -228,41 +225,6 @@ export default async function EditEventPage({
           <input name="label" placeholder="Label" required className={input + " mt-0 flex-1"} />
           <input name="amount" type="number" step="0.01" min="0" placeholder="Price $" required className={input + " mt-0 w-28"} />
           <button className={smallBtn}>Add add-on</button>
-        </form>
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold">Coupons</h2>
-        <div className="mt-4 space-y-2">
-          {coupons.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm"
-            >
-              <span>
-                <strong>{c.code}</strong> —{" "}
-                {c.type === "percent" ? `${c.value}% off` : `${formatCents(c.value)} off`} · used{" "}
-                {c.uses}
-                {c.maxUses != null ? `/${c.maxUses}` : ""}
-              </span>
-              <form action={deleteCoupon.bind(null, eventId, c.id)}>
-                <button className={dangerBtn}>Delete</button>
-              </form>
-            </div>
-          ))}
-        </div>
-        <form
-          action={addCoupon.bind(null, eventId)}
-          className="mt-3 flex flex-wrap gap-2 rounded-lg border border-dashed border-zinc-300 p-3"
-        >
-          <input name="code" placeholder="CODE" required className={input + " mt-0 w-36"} />
-          <select name="type" className={input + " mt-0 w-32"}>
-            <option value="percent">% off</option>
-            <option value="fixed">$ off</option>
-          </select>
-          <input name="value" type="number" step="0.01" min="0" placeholder="Value" required className={input + " mt-0 w-28"} />
-          <input name="maxUses" type="number" min="1" placeholder="Max uses" className={input + " mt-0 w-28"} />
-          <button className={smallBtn}>Add coupon</button>
         </form>
       </section>
 

@@ -8,7 +8,6 @@ import { formatCents } from "./pricing";
 type Pricing = {
   tier: { label: string; amountCents: number } | null;
   addOns: { label: string; amountCents: number }[];
-  coupon: { code: string; discountCents: number } | null;
 };
 
 function formatDate(d: Date) {
@@ -22,7 +21,7 @@ function formatDate(d: Date) {
   });
 }
 
-// Confirm a registration: flip status, count coupon use, send the email.
+// Confirm a registration: flip status and send the email.
 export async function confirmRegistration(registrationId: number) {
   const registration = await db.query.registrations.findFirst({
     where: eq(schema.registrations.id, registrationId),
@@ -33,18 +32,6 @@ export async function confirmRegistration(registrationId: number) {
     .update(schema.registrations)
     .set({ status: "confirmed" })
     .where(eq(schema.registrations.id, registrationId));
-
-  if (registration.couponId) {
-    const coupon = await db.query.coupons.findFirst({
-      where: eq(schema.coupons.id, registration.couponId),
-    });
-    if (coupon) {
-      await db
-        .update(schema.coupons)
-        .set({ uses: coupon.uses + 1 })
-        .where(eq(schema.coupons.id, coupon.id));
-    }
-  }
 
   const event = await db.query.events.findFirst({
     where: eq(schema.events.id, registration.eventId),
@@ -68,7 +55,6 @@ async function sendConfirmationEmail(
   if (event?.location) detailLines.push(`Where: ${event.location}`);
   if (pricing.tier) detailLines.push(`Registration: ${pricing.tier.label}`);
   for (const a of pricing.addOns ?? []) detailLines.push(`Add-on: ${a.label}`);
-  if (pricing.coupon) detailLines.push(`Coupon: ${pricing.coupon.code}`);
   detailLines.push(`Amount: ${formatCents(registration.amountCents)}`);
 
   const text =
@@ -91,7 +77,6 @@ async function sendConfirmationEmail(
     event?.location ? row("Where", event.location) : "",
     pricing.tier ? row("Registration", pricing.tier.label) : "",
     ...(pricing.addOns ?? []).map((a) => row("Add-on", a.label)),
-    pricing.coupon ? row("Coupon", pricing.coupon.code) : "",
     row("Amount", formatCents(registration.amountCents)),
   ].join("");
 
