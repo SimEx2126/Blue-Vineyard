@@ -2,9 +2,9 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db, schema } from "@/db";
-import { assertCanEditEvent, requireUser } from "@/lib/access";
+import { assertCanEditEvent, canManageEvents, requireUser } from "@/lib/access";
 import { getGateway } from "@/lib/payments";
 import {
   parseSectionConfig,
@@ -66,6 +66,8 @@ function eventFieldsFrom(fd: FormData) {
 
 export async function createEvent(fd: FormData) {
   const user = await requireUser();
+  // Viewers are read-only; only admins and organisers create events.
+  if (!canManageEvents(user)) notFound();
   const fields = eventFieldsFrom(fd);
   if (!fields.slug || !fields.title) redirect("/admin/events/new?error=Slug+and+title+are+required");
   const [event] = await db

@@ -2,16 +2,16 @@ import Link from "next/link";
 import { eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
-import { isAdmin, requireUser } from "@/lib/access";
+import { canManageEvents, canViewAllEvents, isAdmin, requireUser } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   const user = await requireUser();
 
-  // Organisers see only the events they own; admins see the whole conference.
+  // Admins and viewers see the whole conference; organisers see only their own.
   const events = await db.query.events.findMany({
-    where: isAdmin(user) ? undefined : eq(schema.events.ownerId, user.id),
+    where: canViewAllEvents(user) ? undefined : eq(schema.events.ownerId, user.id),
     orderBy: (e, { desc }) => [desc(e.createdAt)],
   });
   const eventIds = events.map((e) => e.id);
@@ -44,22 +44,30 @@ export default async function AdminDashboard() {
         .where(inArray(schema.registrations.eventId, eventIds))
     : [{ total: 0 }];
 
+  // Viewers can look but not touch: no revenue figure, no create/edit controls.
+  const canManage = canManageEvents(user);
+  const canEditEvent = (e: (typeof events)[number]) => isAdmin(user) || e.ownerId === user.id;
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">
-          {isAdmin(user) ? "All registrations" : "Your registrations"}
+          {canViewAllEvents(user) ? "All registrations" : "Your registrations"}
         </h1>
         <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
-          <span className="text-sm text-zinc-500">
-            Net revenue: <strong className="text-zinc-900">{formatCents(revenue.total)}</strong>
-          </span>
-          <Link
-            href="/admin/events/new"
-            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
-          >
-            New event
-          </Link>
+          {canManage && (
+            <span className="text-sm text-zinc-500">
+              Net revenue: <strong className="text-zinc-900">{formatCents(revenue.total)}</strong>
+            </span>
+          )}
+          {canManage && (
+            <Link
+              href="/admin/events/new"
+              className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+            >
+              New event
+            </Link>
+          )}
         </div>
       </div>
 
@@ -104,23 +112,31 @@ export default async function AdminDashboard() {
                 >
                   Registrations
                 </Link>
-                <Link
-                  href={`/admin/events/${event.id}/edit`}
-                  className="text-teal-700 hover:underline"
-                >
-                  Edit
-                </Link>
+                {canEditEvent(event) && (
+                  <Link
+                    href={`/admin/events/${event.id}/edit`}
+                    className="text-teal-700 hover:underline"
+                  >
+                    Edit
+                  </Link>
+                )}
               </div>
             </div>
           );
         })}
         {events.length === 0 && (
           <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500">
-            No events yet.{" "}
-            <Link href="/admin/events/new" className="text-teal-700 hover:underline">
-              Create one
-            </Link>
-            .
+            {canManage ? (
+              <>
+                No events yet.{" "}
+                <Link href="/admin/events/new" className="text-teal-700 hover:underline">
+                  Create one
+                </Link>
+                .
+              </>
+            ) : (
+              "No events to show."
+            )}
           </p>
         )}
       </div>
@@ -169,12 +185,21 @@ export default async function AdminDashboard() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/events/${event.id}/edit`}
-                      className="text-teal-700 hover:underline"
-                    >
-                      Edit
-                    </Link>
+                    {canEditEvent(event) ? (
+                      <Link
+                        href={`/admin/events/${event.id}/edit`}
+                        className="text-teal-700 hover:underline"
+                      >
+                        Edit
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/admin/events/${event.id}/registrations`}
+                        className="text-teal-700 hover:underline"
+                      >
+                        View
+                      </Link>
+                    )}
                   </td>
                 </tr>
               );
@@ -182,11 +207,17 @@ export default async function AdminDashboard() {
             {events.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
-                  No events yet.{" "}
-                  <Link href="/admin/events/new" className="text-teal-700 hover:underline">
-                    Create one
-                  </Link>
-                  .
+                  {canManage ? (
+                    <>
+                      No events yet.{" "}
+                      <Link href="/admin/events/new" className="text-teal-700 hover:underline">
+                        Create one
+                      </Link>
+                      .
+                    </>
+                  ) : (
+                    "No events to show."
+                  )}
                 </td>
               </tr>
             )}

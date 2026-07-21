@@ -2,7 +2,7 @@ import Link from "next/link";
 import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
-import { assertCanEditEvent } from "@/lib/access";
+import { assertCanViewEvent } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export default async function RegistrationsPage({
   const { id } = await params;
   const { q } = await searchParams;
   const eventId = Number(id);
-  const { event } = await assertCanEditEvent(eventId);
+  const { event } = await assertCanViewEvent(eventId);
 
   let registrations = await db.query.registrations.findMany({
     where: eq(schema.registrations.eventId, eventId),

@@ -1,12 +1,17 @@
+import { notFound } from "next/navigation";
 import { createEvent } from "../../actions";
 import { EventFields } from "../EventFields";
 import { BannerField } from "@/components/BannerField";
+import { canManageEvents, requireUser } from "@/lib/access";
 
 export default async function NewEventPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  // Viewers are read-only — no create form.
+  const user = await requireUser();
+  if (!canManageEvents(user)) notFound();
   const { error } = await searchParams;
   return (
     <div>

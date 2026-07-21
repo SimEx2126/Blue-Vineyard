@@ -1,13 +1,16 @@
 import { and, desc, eq } from "drizzle-orm";
+import { notFound } from "next/navigation";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
-import { isAdmin, requireUser } from "@/lib/access";
+import { isAdmin, isViewer, requireUser } from "@/lib/access";
 import { refundPayment } from "../actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
   const user = await requireUser();
+  // Viewers watch submissions, not the payment ledger.
+  if (isViewer(user)) notFound();
 
   // The ledger is joined through to the event so it can be limited to the
   // organiser's own events; it exposes registrant names alongside amounts.

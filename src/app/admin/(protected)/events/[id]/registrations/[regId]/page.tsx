@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
 import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
-import { assertCanEditEvent } from "@/lib/access";
+import { assertCanViewEvent } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +49,8 @@ export default async function RegistrationDetailPage({
   if (!Number.isInteger(registrationId)) notFound();
 
   // This page renders Medicare number, doctor name and phone — gate it before
-  // reading anything.
-  await assertCanEditEvent(eventId);
+  // reading anything. Viewers may look; only editors flip the read marker.
+  const { canEdit } = await assertCanViewEvent(eventId);
 
   const registration = await db.query.registrations.findFirst({
     where: and(
@@ -68,7 +68,7 @@ export default async function RegistrationDetailPage({
     }),
   ]);
 
-  if (!registration.readAt) {
+  if (canEdit && !registration.readAt) {
     await db
       .update(schema.registrations)
       .set({ readAt: new Date() })

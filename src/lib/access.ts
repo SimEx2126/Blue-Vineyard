@@ -58,10 +58,26 @@ export function isAdmin(user: CurrentUser) {
   return user.role === "admin";
 }
 
+// A read-only caretaker who watches every event's submissions org-wide, e.g.
+// covering while an admin is away. Never edits, refunds, or manages people.
+export function isViewer(user: CurrentUser) {
+  return user.role === "viewer";
+}
+
+// Who sees every event (not just their own) in the dashboard and events list.
+export function canViewAllEvents(user: CurrentUser) {
+  return user.role === "admin" || user.role === "viewer";
+}
+
+// Who may create and own events. Viewers may not.
+export function canManageEvents(user: CurrentUser) {
+  return user.role === "admin" || user.role === "organiser";
+}
+
 /**
  * Returns the event only when the signed-in user is an admin or owns it.
  * Anything else is a 404 rather than a 403, so an organiser cannot probe
- * which event ids exist.
+ * which event ids exist. Every mutating path goes through here.
  */
 export async function assertCanEditEvent(eventId: number) {
   const user = await requireUser();
@@ -72,4 +88,21 @@ export async function assertCanEditEvent(eventId: number) {
   if (!event) notFound();
   if (!isAdmin(user) && event.ownerId !== user.id) notFound();
   return { event, user };
+}
+
+/**
+ * Read access to one event's registrations: admins and viewers (org-wide),
+ * plus the event's own organiser. Returns `canEdit` so a page can allow a
+ * viewer to look without exposing controls that mutate.
+ */
+export async function assertCanViewEvent(eventId: number) {
+  const user = await requireUser();
+  if (!Number.isInteger(eventId)) notFound();
+  const event = await db.query.events.findFirst({
+    where: eq(schema.events.id, eventId),
+  });
+  if (!event) notFound();
+  const canEdit = isAdmin(user) || event.ownerId === user.id;
+  if (!canEdit && !isViewer(user)) notFound();
+  return { event, user, canEdit };
 }

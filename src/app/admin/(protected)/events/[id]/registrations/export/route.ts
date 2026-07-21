@@ -1,6 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { assertCanEditEvent } from "@/lib/access";
+import { assertCanViewEvent } from "@/lib/access";
 import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
 
 function csvCell(value: unknown): string {
@@ -20,7 +20,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   // Route handlers do not run the (protected) layout, so this check is the
   // only thing standing in front of a CSV of every registrant's medical
   // details and Medicare numbers.
-  const { event } = await assertCanEditEvent(eventId);
+  const { event } = await assertCanViewEvent(eventId);
 
   const [sections, registrations] = await Promise.all([
     db.query.eventSections.findMany({

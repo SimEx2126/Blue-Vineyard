@@ -1,27 +1,32 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { isAdmin, requireUser } from "@/lib/access";
+import { canManageEvents, canViewAllEvents, isAdmin, requireUser } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminEventsPage() {
   const user = await requireUser();
   const events = await db.query.events.findMany({
-    where: isAdmin(user) ? undefined : eq(schema.events.ownerId, user.id),
+    where: canViewAllEvents(user) ? undefined : eq(schema.events.ownerId, user.id),
     orderBy: (e, { desc }) => [desc(e.createdAt)],
   });
+
+  const canManage = canManageEvents(user);
+  const canEditEvent = (e: (typeof events)[number]) => isAdmin(user) || e.ownerId === user.id;
 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{isAdmin(user) ? "All events" : "Your events"}</h1>
-        <Link
-          href="/admin/events/new"
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
-        >
-          New event
-        </Link>
+        <h1 className="text-2xl font-bold">{canViewAllEvents(user) ? "All events" : "Your events"}</h1>
+        {canManage && (
+          <Link
+            href="/admin/events/new"
+            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+          >
+            New event
+          </Link>
+        )}
       </div>
       {/* Cards on phones; the table below is too wide to fit and was clipping
           its action links. */}
@@ -68,12 +73,14 @@ export default async function AdminEventsPage() {
               >
                 Registrations
               </Link>
-              <Link
-                href={`/admin/events/${event.id}/edit`}
-                className="text-teal-700 hover:underline"
-              >
-                Edit
-              </Link>
+              {canEditEvent(event) && (
+                <Link
+                  href={`/admin/events/${event.id}/edit`}
+                  className="text-teal-700 hover:underline"
+                >
+                  Edit
+                </Link>
+              )}
             </div>
           </div>
         ))}
@@ -153,12 +160,14 @@ export default async function AdminEventsPage() {
                   >
                     Registrations
                   </Link>
-                  <Link
-                    href={`/admin/events/${event.id}/edit`}
-                    className="text-teal-700 hover:underline"
-                  >
-                    Edit
-                  </Link>
+                  {canEditEvent(event) && (
+                    <Link
+                      href={`/admin/events/${event.id}/edit`}
+                      className="text-teal-700 hover:underline"
+                    >
+                      Edit
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}

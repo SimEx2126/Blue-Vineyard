@@ -116,20 +116,31 @@ export default async function UsersPage({
                 </td>
                 <td className="px-4 py-3 text-zinc-500">{p.email}</td>
                 <td className="px-4 py-3">
-                  <form action={setUserRole.bind(null, p.id, p.role === "admin" ? "organiser" : "admin")}>
-                    <button
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        p.role === "admin"
-                          ? "bg-teal-100 text-teal-800 hover:bg-teal-200"
-                          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                      }`}
-                      title={
-                        p.role === "admin" ? "Make an organiser" : "Make an administrator"
-                      }
-                    >
+                  {p.id === admin.id ? (
+                    // You can't change your own role (last-admin guard), so show it flat.
+                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800">
                       {p.role}
-                    </button>
-                  </form>
+                    </span>
+                  ) : (
+                    <form
+                      action={async (fd: FormData) => {
+                        "use server";
+                        await setUserRole(p.id, String(fd.get("role") ?? ""));
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      <select
+                        name="role"
+                        defaultValue={p.role ?? "organiser"}
+                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs"
+                      >
+                        <option value="admin">admin</option>
+                        <option value="organiser">organiser</option>
+                        <option value="viewer">viewer</option>
+                      </select>
+                      <button className={smallBtn}>Set</button>
+                    </form>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right">{p.eventCount}</td>
                 <td className="space-y-2 px-4 py-3 text-right">
@@ -198,6 +209,7 @@ export default async function UsersPage({
             Role
             <select name="role" defaultValue="organiser" className={input}>
               <option value="organiser">Organiser — their own events only</option>
+              <option value="viewer">Viewer — read-only, watches all submissions</option>
               <option value="admin">Administrator — every event, and this list</option>
             </select>
           </label>

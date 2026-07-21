@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { isAdmin, requireUser } from "@/lib/access";
+import { isAdmin, isViewer, requireUser } from "@/lib/access";
 import { AdminNav } from "@/components/AdminNav";
 import { headers } from "next/headers";
 
@@ -19,7 +19,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           items={[
             { href: "/admin", label: "Dashboard" },
             { href: "/admin/events", label: "Events" },
-            { href: "/admin/payments", label: "Payments" },
+            // Viewers watch submissions only — no payments ledger.
+            ...(isViewer(user) ? [] : [{ href: "/admin/payments", label: "Payments" }]),
             // People is admin-only, and the page itself enforces that too.
             ...(isAdmin(user) ? [{ href: "/admin/users", label: "People" }] : []),
           ]}
@@ -30,6 +31,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             {isAdmin(user) && (
               <span className="ml-2 rounded bg-teal-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                 Admin
+              </span>
+            )}
+            {isViewer(user) && (
+              <span className="ml-2 rounded bg-zinc-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                Viewer
               </span>
             )}
           </span>

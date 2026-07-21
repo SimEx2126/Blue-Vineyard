@@ -56,7 +56,7 @@ export async function createUser(fd: FormData) {
   const role = String(fd.get("role") ?? "organiser");
 
   if (!name || !email) fail("Name and email are required.");
-  if (role !== "admin" && role !== "organiser") fail("Unknown role.");
+  if (!["admin", "organiser", "viewer"].includes(role)) fail("Unknown role.");
 
   // The admin no longer picks a password. The account is created with a random
   // one nobody sees, then the person sets their own via the emailed link — so
@@ -126,7 +126,7 @@ export async function setUserActive(userId: string, active: boolean) {
 
 export async function setUserRole(userId: string, role: string) {
   const admin = await requireAdmin();
-  if (role !== "admin" && role !== "organiser") fail("Unknown role.");
+  if (!["admin", "organiser", "viewer"].includes(role)) fail("Unknown role.");
 
   if (userId === admin.id && role !== "admin") {
     fail("You cannot remove your own administrator access.");
