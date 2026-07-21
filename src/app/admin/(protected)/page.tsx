@@ -1,17 +1,29 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
-import { canManageEvents, canViewAllEvents, isAdmin, requireUser } from "@/lib/access";
+import {
+  canManageEvents,
+  canViewAllEvents,
+  eventListWhere,
+  isAdmin,
+  isSuperAdmin,
+  requireUser,
+} from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   const user = await requireUser();
+  // The super-admin's home is the organizations area, not a per-organization
+  // dashboard — send them there rather than aggregating across tenants.
+  if (isSuperAdmin(user)) redirect("/admin/organizations");
 
-  // Admins and viewers see the whole conference; organisers see only their own.
+  // Scoped to the user's organization: admins and viewers see all of its
+  // events, organisers only their own. Super-admin sees across organizations.
   const events = await db.query.events.findMany({
-    where: canViewAllEvents(user) ? undefined : eq(schema.events.ownerId, user.id),
+    where: eventListWhere(user),
     orderBy: (e, { desc }) => [desc(e.createdAt)],
   });
   const eventIds = events.map((e) => e.id);
@@ -30,7 +42,7 @@ export default async function AdminDashboard() {
   const countByEvent = new Map(counts.map((c) => [c.eventId, c]));
 
   // Revenue is limited to the same events — an organiser must not see the
-  // conference-wide takings.
+  // organization-wide takings.
   const [revenue] = eventIds.length
     ? await db
         .select({

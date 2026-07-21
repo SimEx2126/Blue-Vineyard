@@ -12,6 +12,9 @@ import { user } from "./auth-schema";
 
 // Every table carries org_id so multi-tenant is a migration, not a rewrite.
 
+// A row here is an Organization — the tenant boundary. Admins, organisers,
+// events, registrations and payments all belong to exactly one organization,
+// and nothing crosses it except the platform super-admin (orgId null).
 export const orgs = pgTable("orgs", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),

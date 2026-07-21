@@ -50,9 +50,12 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      // Which conference/church this person belongs to.
+      // Which organization this person belongs to. Null only for the platform
+      // super-admin, who sits above every organization.
       orgId: { type: "number", required: false, input: false },
-      // admin sees every event and manages users; organiser sees their own.
+      // superadmin: platform owner across all organizations. admin: manages
+      // everything in their organization. organiser: their own events. viewer:
+      // read-only across their organization.
       role: { type: "string", required: false, defaultValue: "organiser", input: false },
       // Deactivated people keep their events but cannot sign in. Checked on
       // every request, so an existing session stops working immediately.

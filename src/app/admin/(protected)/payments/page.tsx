@@ -1,8 +1,8 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
-import { isAdmin, isViewer, requireUser } from "@/lib/access";
+import { eventListWhere, isViewer, requireUser } from "@/lib/access";
 import { refundPayment } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +12,9 @@ export default async function PaymentsPage() {
   // Viewers watch submissions, not the payment ledger.
   if (isViewer(user)) notFound();
 
-  // The ledger is joined through to the event so it can be limited to the
-  // organiser's own events; it exposes registrant names alongside amounts.
-  const ownerFilter = isAdmin(user) ? undefined : eq(schema.events.ownerId, user.id);
-
+  // The ledger is joined through to the event so the same organization-and-role
+  // scoping used for the events list applies here; it exposes registrant names
+  // alongside amounts, so it must never cross the tenant boundary.
   const rows = await db
     .select({
       payment: schema.payments,
@@ -28,7 +27,7 @@ export default async function PaymentsPage() {
       eq(schema.payments.registrationId, schema.registrations.id)
     )
     .innerJoin(schema.events, eq(schema.registrations.eventId, schema.events.id))
-    .where(and(ownerFilter))
+    .where(eventListWhere(user))
     .orderBy(desc(schema.payments.createdAt))
     .limit(200);
 

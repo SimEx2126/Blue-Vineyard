@@ -1,14 +1,19 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
-import { db, schema } from "@/db";
-import { canManageEvents, canViewAllEvents, isAdmin, requireUser } from "@/lib/access";
+import { db } from "@/db";
+import {
+  canManageEvents,
+  canViewAllEvents,
+  eventListWhere,
+  isAdmin,
+  requireUser,
+} from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminEventsPage() {
   const user = await requireUser();
   const events = await db.query.events.findMany({
-    where: canViewAllEvents(user) ? undefined : eq(schema.events.ownerId, user.id),
+    where: eventListWhere(user),
     orderBy: (e, { desc }) => [desc(e.createdAt)],
   });
 

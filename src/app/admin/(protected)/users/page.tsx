@@ -1,6 +1,7 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
 import { db, schema, authSchema } from "@/db";
-import { requireAdmin } from "@/lib/access";
+import { isSuperAdmin, requireAdmin } from "@/lib/access";
 import {
   createUser,
   reassignEvents,
@@ -23,8 +24,15 @@ export default async function UsersPage({
   searchParams: Promise<{ error?: string; created?: string; sent?: string }>;
 }) {
   const admin = await requireAdmin();
+  // The platform owner manages accounts organization-by-organization from the
+  // organizations area, not this single-organization screen.
+  if (isSuperAdmin(admin)) redirect("/admin/organizations");
+  if (admin.orgId == null) notFound();
+  const orgId = admin.orgId;
   const { error, created, sent } = await searchParams;
 
+  // Both queries are scoped to the admin's own organization — the people list
+  // and the per-owner event counts must never include another organization.
   // Counted separately rather than as a correlated subquery: inside one,
   // Drizzle emits an unqualified "id" that Postgres binds to events.id.
   const [rows, eventCounts] = await Promise.all([
@@ -41,6 +49,7 @@ export default async function UsersPage({
         createdAt: authSchema.user.createdAt,
       })
       .from(authSchema.user)
+      .where(eq(authSchema.user.orgId, orgId))
       .orderBy(authSchema.user.name),
     db
       .select({
@@ -48,6 +57,7 @@ export default async function UsersPage({
         count: sql<number>`count(*)::int`,
       })
       .from(schema.events)
+      .where(eq(schema.events.orgId, orgId))
       .groupBy(schema.events.ownerId),
   ]);
 
