@@ -302,7 +302,7 @@ async function ensureOrganiser(
   }
   await db
     .update(authSchema.user)
-    .set({ role: "organiser", orgId, active: true })
+    .set({ role: "organiser", orgId, active: true, emailVerified: true })
     .where(eq(authSchema.user.id, record.id));
   return record.id;
 }

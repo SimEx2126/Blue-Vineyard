@@ -65,7 +65,7 @@ async function main() {
     // role and orgId are input:false, so they are set here rather than at signup.
     await db
       .update(authSchema.user)
-      .set({ role: person.role, orgId: org.id })
+      .set({ role: person.role, orgId: org.id, emailVerified: true })
       .where(eq(authSchema.user.id, record.id));
 
     for (const slug of person.ownsSlugs) {

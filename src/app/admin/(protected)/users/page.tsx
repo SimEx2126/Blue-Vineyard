@@ -1,7 +1,13 @@
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db, schema, authSchema } from "@/db";
 import { requireAdmin } from "@/lib/access";
-import { createUser, reassignEvents, setUserActive, setUserRole } from "./actions";
+import {
+  createUser,
+  reassignEvents,
+  resendSetPassword,
+  setUserActive,
+  setUserRole,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +20,10 @@ const smallBtn =
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; sent?: string }>;
 }) {
   const admin = await requireAdmin();
-  const { error, created } = await searchParams;
+  const { error, created, sent } = await searchParams;
 
   // Counted separately rather than as a correlated subquery: inside one,
   // Drizzle emits an unqualified "id" that Postgres binds to events.id.
@@ -29,6 +35,9 @@ export default async function UsersPage({
         email: authSchema.user.email,
         role: authSchema.user.role,
         active: authSchema.user.active,
+        // Set true when they complete the set-password link, so it doubles as
+        // "have they finished setting up their account?".
+        emailVerified: authSchema.user.emailVerified,
         createdAt: authSchema.user.createdAt,
       })
       .from(authSchema.user)
@@ -64,8 +73,13 @@ export default async function UsersPage({
       )}
       {created && (
         <p className="rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">
-          Account created for <strong>{created}</strong>. Pass them the password you set — there is
-          no invitation email yet.
+          Account created for <strong>{created}</strong>. We&apos;ve emailed them a link to set their
+          own password.
+        </p>
+      )}
+      {sent && (
+        <p className="rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">
+          Set-password email re-sent to <strong>{sent}</strong>.
         </p>
       )}
 
@@ -88,10 +102,16 @@ export default async function UsersPage({
                 <td className="px-4 py-3 font-medium">
                   {p.name}
                   {p.id === admin.id && <span className="ml-2 text-xs text-zinc-400">(you)</span>}
-                  {!p.active && (
+                  {!p.active ? (
                     <span className="ml-2 rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-zinc-600">
                       Deactivated
                     </span>
+                  ) : (
+                    !p.emailVerified && (
+                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                        Awaiting setup
+                      </span>
+                    )
                   )}
                 </td>
                 <td className="px-4 py-3 text-zinc-500">{p.email}</td>
@@ -113,6 +133,11 @@ export default async function UsersPage({
                 </td>
                 <td className="px-4 py-3 text-right">{p.eventCount}</td>
                 <td className="space-y-2 px-4 py-3 text-right">
+                  {p.active && !p.emailVerified && (
+                    <form action={resendSetPassword.bind(null, p.id)}>
+                      <button className={smallBtn}>Resend setup email</button>
+                    </form>
+                  )}
                   <form action={setUserActive.bind(null, p.id, !p.active)}>
                     <button className={smallBtn}>{p.active ? "Deactivate" : "Reactivate"}</button>
                   </form>
@@ -151,8 +176,8 @@ export default async function UsersPage({
       <section className="rounded-xl border border-zinc-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Add someone</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          There is no invitation email yet, so set a password here and pass it on. Ask them to
-          change it once that is possible.
+          They&apos;ll get an email with a link to set their own password — you don&apos;t need to
+          choose one for them.
         </p>
         <form action={createUser} className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className={label}>
@@ -167,16 +192,6 @@ export default async function UsersPage({
               required
               className={input}
               placeholder="name@adventist.org.au"
-            />
-          </label>
-          <label className={label}>
-            Initial password
-            <input
-              name="password"
-              required
-              minLength={10}
-              className={input}
-              placeholder="At least 10 characters"
             />
           </label>
           <label className={label}>
