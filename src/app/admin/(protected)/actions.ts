@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { db, schema } from "@/db";
 import { assertCanEditEvent, canManageEvents, requireUser } from "@/lib/access";
-import { getGateway } from "@/lib/payments";
+import { confirmRegistration } from "@/lib/confirm";
 import {
   parseSectionConfig,
   SECTION_KINDS,
@@ -60,6 +60,7 @@ function eventFieldsFrom(fd: FormData) {
     closesAt: date(fd, "closesAt"),
     capacity: num(fd, "capacity"),
     fullMessage: str(fd, "fullMessage"),
+    paymentInstructions: str(fd, "paymentInstructions"),
     status: str(fd, "status") ?? "draft",
   };
 }
@@ -241,8 +242,8 @@ export async function refundPayment(paymentId: number) {
   });
   if (!registration) return;
   await assertCanEditEvent(registration.eventId);
-  const gateway = getGateway();
-  const refund = await gateway.refund(payment.gatewayRef ?? "", payment.amountCents);
+  // The money is returned outside the app (bank transfer), so this only records
+  // the refund in the ledger and cancels the place.
   await db
     .update(schema.payments)
     .set({ status: "refunded" })
@@ -255,7 +256,6 @@ export async function refundPayment(paymentId: number) {
     currency: payment.currency,
     status: "refunded",
     gateway: payment.gateway,
-    gatewayRef: refund.gatewayRef,
   });
   await db
     .update(schema.registrations)
@@ -265,6 +265,36 @@ export async function refundPayment(paymentId: number) {
 }
 
 // ---- Registrations ----
+
+/**
+ * An organiser confirms an outside payment arrived: mark the pending charge
+ * paid, confirm the place, and send the confirmation email with the ticket.
+ */
+export async function markPaymentReceived(registrationId: number) {
+  await requireUser();
+  const registration = await db.query.registrations.findFirst({
+    where: eq(schema.registrations.id, registrationId),
+    columns: { eventId: true, status: true },
+  });
+  if (!registration) return;
+  await assertCanEditEvent(registration.eventId);
+  if (registration.status === "confirmed") return;
+
+  await db
+    .update(schema.payments)
+    .set({ status: "paid" })
+    .where(
+      and(
+        eq(schema.payments.registrationId, registrationId),
+        eq(schema.payments.kind, "charge"),
+        eq(schema.payments.status, "pending")
+      )
+    );
+  // Flips the registration to confirmed and emails the ticket + calendar invite.
+  await confirmRegistration(registrationId);
+  revalidatePath(`/admin/events/${registration.eventId}/registrations/${registrationId}`);
+  revalidatePath(`/admin/events/${registration.eventId}/registrations`);
+}
 
 export async function markRegistrationRead(registrationId: number) {
   await requireUser();

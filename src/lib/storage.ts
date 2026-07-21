@@ -10,8 +10,12 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3
  * reach the browser and the feature works whether the bucket is public or not.
  */
 
-// The one drawer this app owns inside the shared bucket.
+// The one drawer this app owns inside the shared bucket, split into a public
+// area (event banners, served by anyone) and a private one (payment proofs,
+// served only to the event's organiser through an auth-gated route).
 export const MEDIA_PREFIX = "adventist-events/";
+export const BANNER_PREFIX = "adventist-events/banners/";
+export const PROOF_PREFIX = "adventist-events/proofs/";
 
 const REQUIRED = [
   "WASABI_ACCESS_KEY_ID",
@@ -60,7 +64,7 @@ export function extensionForType(contentType: string): string | null {
 }
 
 /** Store a file and return the key it was stored under. */
-export async function putMedia(body: Buffer, contentType: string, folder = "events") {
+export async function putMedia(body: Buffer, contentType: string, folder = "banners") {
   const ext = extensionForType(contentType);
   if (!ext) throw new Error(`Unsupported image type: ${contentType}`);
   const key = `${MEDIA_PREFIX}${folder}/${randomUUID()}.${ext}`;
@@ -85,19 +89,24 @@ export async function getMedia(key: string) {
   return { bytes, contentType: res.ContentType ?? "application/octet-stream" };
 }
 
-/**
- * True only for keys inside this app's prefix. The download route uses this to
- * refuse any attempt to read the rest of the shared bucket through our proxy.
- */
-export function isOwnedKey(key: string) {
-  return (
-    key.startsWith(MEDIA_PREFIX) &&
-    !key.includes("..") &&
-    !key.includes("//")
-  );
+function safeKey(key: string) {
+  return !key.includes("..") && !key.includes("//");
 }
 
-/** The in-app URL a stored key is served from. */
+/**
+ * Public banner keys only. The public /api/media route uses this so it can
+ * never be turned into a reader for payment proofs or the rest of the bucket.
+ */
+export function isPublicBannerKey(key: string) {
+  return key.startsWith(BANNER_PREFIX) && safeKey(key);
+}
+
+/** Payment-proof keys only, served through the auth-gated proof route. */
+export function isProofKey(key: string) {
+  return key.startsWith(PROOF_PREFIX) && safeKey(key);
+}
+
+/** The public in-app URL a banner key is served from. */
 export function mediaUrl(key: string) {
   return `/api/media/${key}`;
 }

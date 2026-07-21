@@ -1,9 +1,9 @@
-import { getMedia, isOwnedKey, isStorageConfigured } from "@/lib/storage";
+import { getMedia, isPublicBannerKey, isStorageConfigured } from "@/lib/storage";
 
 /**
  * Serves a stored banner. Public — banners appear on the public events page —
- * but locked to this app's own prefix, so it can never be turned into a reader
- * for the rest of the shared ACS bucket.
+ * but locked to the banners prefix, so it can never be turned into a reader
+ * for payment proofs or the rest of the shared ACS bucket.
  */
 export async function GET(_req: Request, ctx: { params: Promise<{ key: string[] }> }) {
   if (!isStorageConfigured()) {
@@ -13,7 +13,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ key: string[] 
   const { key: segments } = await ctx.params;
   const key = segments.map(decodeURIComponent).join("/");
 
-  if (!isOwnedKey(key)) {
+  if (!isPublicBannerKey(key)) {
     return new Response("Not found", { status: 404 });
   }
 

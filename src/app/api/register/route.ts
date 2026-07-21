@@ -11,8 +11,8 @@ import {
   toSectionDTOs,
   validateAddOnIds,
 } from "@/lib/registration";
-import { getGateway } from "@/lib/payments";
 import { confirmRegistration } from "@/lib/confirm";
+import { sendRegistrationReceivedEmail } from "@/lib/registration-email";
 import { generateReference } from "@/lib/reference";
 
 const bodySchema = z.object({
@@ -164,24 +164,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ redirectUrl: `/register/confirmed?ref=${registration.reference}` });
   }
 
-  const gateway = getGateway();
-  const checkout = await gateway.createCheckout({
-    registrationId: registration.id,
-    reference: registration.reference!,
-    amountCents: totalCents,
-    currency: "aud",
-    description: `${event.title} — ${contact.name}`,
-  });
-
+  // Paid: payment happens outside the app. Record a pending charge, email the
+  // registrant how to pay and where to upload proof, and send them to the pay
+  // page. An organiser confirms it later once the money arrives.
   await db.insert(schema.payments).values({
     orgId: event.orgId,
     registrationId: registration.id,
     kind: "charge",
     amountCents: totalCents,
     status: "pending",
-    gateway: gateway.name,
-    gatewayRef: checkout.gatewayRef,
+    gateway: "manual",
   });
 
-  return NextResponse.json({ redirectUrl: checkout.redirectUrl });
+  await sendRegistrationReceivedEmail(registration, event);
+
+  return NextResponse.json({ redirectUrl: `/pay/${registration.reference}` });
 }

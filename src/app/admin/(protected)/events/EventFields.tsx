@@ -71,6 +71,24 @@ export function EventFields({ event }: { event?: EventRow }) {
           <input name="fullMessage" defaultValue={event?.fullMessage ?? ""} className={input} />
         </label>
       </div>
+      <div className="sm:col-span-2">
+        <label className={label}>
+          Payment instructions
+          <textarea
+            name="paymentInstructions"
+            rows={4}
+            defaultValue={event?.paymentInstructions ?? ""}
+            className={input}
+            placeholder={
+              "How registrants pay you (payment happens outside the app). e.g.\n" +
+              "Bank transfer to BSB 000-000, Acc 12345678, ref your surname."
+            }
+          />
+          <span className="mt-1 block text-xs font-normal text-zinc-500">
+            Shown to registrants after they register. They pay outside the app and upload proof.
+          </span>
+        </label>
+      </div>
     </div>
   );
 }

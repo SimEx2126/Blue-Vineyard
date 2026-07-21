@@ -5,6 +5,7 @@ import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
 import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
 import { assertCanViewEvent } from "@/lib/access";
+import { markPaymentReceived } from "../../../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -169,6 +170,67 @@ export default async function RegistrationDetailPage({
             </div>
           </dl>
         </div>
+
+        {registration.amountCents > 0 && (
+          <div className="rounded-xl border border-zinc-200 bg-white p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                Payment
+              </h2>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  registration.status === "confirmed"
+                    ? "bg-teal-100 text-teal-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {registration.status === "confirmed" ? "Paid" : "Awaiting payment"}
+              </span>
+            </div>
+
+            {registration.proofSubmittedAt ? (
+              <div className="mt-3 space-y-2 text-sm">
+                <p className="text-zinc-500">
+                  Proof submitted {registration.proofSubmittedAt.toLocaleString("en-AU")}
+                </p>
+                {registration.proofReference && (
+                  <p>
+                    <span className="text-zinc-500">Reference: </span>
+                    <span className="font-medium">{registration.proofReference}</span>
+                  </p>
+                )}
+                {registration.proofKey && (
+                  <a
+                    href={`/api/registrations/${registration.id}/proof`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/registrations/${registration.id}/proof`}
+                      alt="Proof of payment"
+                      className="max-h-64 rounded-lg border border-zinc-200"
+                    />
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-zinc-500">No proof uploaded yet.</p>
+            )}
+
+            {canEdit && registration.status === "pending" && (
+              <form action={markPaymentReceived.bind(null, registration.id)} className="mt-4">
+                <button className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">
+                  Mark as paid &amp; confirm
+                </button>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Confirms the place and emails the registrant their ticket.
+                </p>
+              </form>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

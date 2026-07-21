@@ -42,6 +42,9 @@ export const events = pgTable("events", {
   closesAt: timestamp("closes_at", { withTimezone: true }),
   capacity: integer("capacity"),
   fullMessage: text("full_message"),
+  // How to pay — bank details etc. — shown to registrants after they register,
+  // since payment happens outside the app (no card gateway).
+  paymentInstructions: text("payment_instructions"),
   status: text("status").notNull().default("draft"), // draft | published | archived
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -111,6 +114,11 @@ export const registrations = pgTable("registrations", {
   couponId: integer("coupon_id").references(() => coupons.id),
   pricing: jsonb("pricing").notNull().default({}), // { tier, addOns, coupon, totalCents }
   amountCents: integer("amount_cents").notNull().default(0),
+  // Proof of an outside payment, supplied by the registrant. A private Wasabi
+  // key for an uploaded screenshot, and/or a typed reference number.
+  proofKey: text("proof_key"),
+  proofReference: text("proof_reference"),
+  proofSubmittedAt: timestamp("proof_submitted_at", { withTimezone: true }),
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
