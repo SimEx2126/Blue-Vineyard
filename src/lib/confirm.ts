@@ -7,7 +7,6 @@ import { formatCents } from "./pricing";
 
 type Pricing = {
   tier: { label: string; amountCents: number } | null;
-  addOns: { label: string; amountCents: number }[];
 };
 
 function formatDate(d: Date) {
@@ -54,7 +53,6 @@ async function sendConfirmationEmail(
   if (event?.startsAt) detailLines.push(`When: ${formatDate(event.startsAt)}`);
   if (event?.location) detailLines.push(`Where: ${event.location}`);
   if (pricing.tier) detailLines.push(`Registration: ${pricing.tier.label}`);
-  for (const a of pricing.addOns ?? []) detailLines.push(`Add-on: ${a.label}`);
   detailLines.push(`Amount: ${formatCents(registration.amountCents)}`);
 
   const text =
@@ -76,7 +74,6 @@ async function sendConfirmationEmail(
     event?.startsAt ? row("When", formatDate(event.startsAt)) : "",
     event?.location ? row("Where", event.location) : "",
     pricing.tier ? row("Registration", pricing.tier.label) : "",
-    ...(pricing.addOns ?? []).map((a) => row("Add-on", a.label)),
     row("Amount", formatCents(registration.amountCents)),
   ].join("");
 

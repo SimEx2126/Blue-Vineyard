@@ -60,7 +60,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     "Name",
     "Email",
     "Option",
-    "Add-ons",
     "Total",
     "Payment",
     ...dataSections.map(sectionHeader),
@@ -70,7 +69,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     const answers = r.answers as Record<string, Record<string, unknown>>;
     const pricing = r.pricing as {
       tier: { label: string } | null;
-      addOns: { label: string }[];
     };
     const sectionCells = dataSections.map((s) => {
       const a = answers[String(s.id)];
@@ -96,7 +94,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       csvCell(r.contactName),
       csvCell(r.contactEmail),
       csvCell(pricing.tier?.label),
-      csvCell(pricing.addOns?.map((a) => a.label)),
       (r.amountCents / 100).toFixed(2),
       paymentByReg.get(r.id) ?? (r.amountCents === 0 ? "free" : ""),
       ...sectionCells,

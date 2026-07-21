@@ -79,7 +79,6 @@ export default async function RegistrationDetailPage({
   const answers = registration.answers as Record<string, Record<string, unknown>>;
   const pricing = registration.pricing as {
     tier: { label: string; amountCents: number } | null;
-    addOns: { label: string; amountCents: number }[];
   };
 
   // Resolve choice option ids to their labels for display
@@ -151,12 +150,6 @@ export default async function RegistrationDetailPage({
                 <dd>{formatCents(pricing.tier.amountCents)}</dd>
               </div>
             )}
-            {pricing.addOns?.map((a) => (
-              <div key={a.label} className="flex justify-between">
-                <dt>{a.label}</dt>
-                <dd>{formatCents(a.amountCents)}</dd>
-              </div>
-            ))}
             <div className="flex justify-between border-t border-zinc-200 pt-2 font-semibold">
               <dt>Total</dt>
               <dd>{formatCents(registration.amountCents)}</dd>

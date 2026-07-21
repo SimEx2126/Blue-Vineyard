@@ -214,23 +214,6 @@ export async function deleteTier(eventId: number, tierId: number) {
   revalidatePath(`/admin/events/${eventId}/edit`);
 }
 
-export async function addAddOn(eventId: number, fd: FormData) {
-  await assertCanEditEvent(eventId);
-  const label = str(fd, "label");
-  const amount = dollarsToCents(fd, "amount");
-  if (!label || amount == null) return;
-  await db.insert(schema.addOns).values({ eventId, label, amountCents: amount });
-  revalidatePath(`/admin/events/${eventId}/edit`);
-}
-
-export async function deleteAddOn(eventId: number, addOnId: number) {
-  await assertCanEditEvent(eventId);
-  await db
-    .delete(schema.addOns)
-    .where(and(eq(schema.addOns.id, addOnId), eq(schema.addOns.eventId, eventId)));
-  revalidatePath(`/admin/events/${eventId}/edit`);
-}
-
 // ---- Payments ----
 
 export async function refundPayment(paymentId: number) {

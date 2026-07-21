@@ -3,13 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { buildAnswersSchema, extractContact, type SectionConfigMap } from "@/lib/sections";
-import { computeTotal } from "@/lib/pricing";
-import {
-  choiceOptionCounts,
-  getOpenState,
-  toSectionDTOs,
-  validateAddOnIds,
-} from "@/lib/registration";
+import { choiceOptionCounts, getOpenState, toSectionDTOs } from "@/lib/registration";
 import { confirmRegistration } from "@/lib/confirm";
 import { sendRegistrationReceivedEmail } from "@/lib/registration-email";
 import { generateReference } from "@/lib/reference";
@@ -18,7 +12,6 @@ const bodySchema = z.object({
   eventId: z.number().int(),
   answers: z.record(z.string(), z.unknown()),
   tierId: z.number().int().nullable(),
-  addOnIds: z.array(z.number().int()).default([]),
 });
 
 export async function POST(req: Request) {
@@ -89,7 +82,7 @@ export async function POST(req: Request) {
     where: eq(schema.priceTiers.eventId, event.id),
   });
   let totalCents = 0;
-  let pricing: Record<string, unknown> = { tier: null, addOns: [], totalCents: 0 };
+  let pricing: Record<string, unknown> = { tier: null, totalCents: 0 };
   let tierRow: (typeof tiers)[number] | null = null;
 
   if (tiers.length > 0) {
@@ -97,25 +90,9 @@ export async function POST(req: Request) {
     if (!tierRow) {
       return NextResponse.json({ error: "Please select a registration option." }, { status: 400 });
     }
-    const tierDTO = {
-      id: tierRow.id,
-      label: tierRow.label,
-      amountCents: tierRow.amountCents,
-    };
-
-    const selectedAddOns = await validateAddOnIds(event.id, body.addOnIds);
-    if (selectedAddOns === null) {
-      return NextResponse.json({ error: "Invalid add-on selection." }, { status: 400 });
-    }
-
-    const result = computeTotal(
-      tierDTO,
-      selectedAddOns.map((a) => ({ id: a.id, label: a.label, amountCents: a.amountCents }))
-    );
-    totalCents = result.totalCents;
+    totalCents = tierRow.amountCents;
     pricing = {
       tier: { id: tierRow.id, label: tierRow.label, amountCents: tierRow.amountCents },
-      addOns: selectedAddOns.map((a) => ({ id: a.id, label: a.label, amountCents: a.amountCents })),
       totalCents,
     };
   }

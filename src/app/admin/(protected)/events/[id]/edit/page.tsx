@@ -8,10 +8,8 @@ import { BannerField } from "@/components/BannerField";
 import { formatCents } from "@/lib/pricing";
 import { SECTION_KINDS, SECTION_LABELS, type SectionKind } from "@/lib/sections";
 import {
-  addAddOn,
   addSection,
   addTier,
-  deleteAddOn,
   deleteEvent,
   deleteSection,
   deleteTier,
@@ -41,7 +39,7 @@ export default async function EditEventPage({
   const eventId = Number(id);
   const { event } = await assertCanEditEvent(eventId);
 
-  const [sections, tiers, addOns] = await Promise.all([
+  const [sections, tiers] = await Promise.all([
     db.query.eventSections.findMany({
       where: eq(schema.eventSections.eventId, eventId),
       orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
@@ -49,10 +47,6 @@ export default async function EditEventPage({
     db.query.priceTiers.findMany({
       where: eq(schema.priceTiers.eventId, eventId),
       orderBy: (t, { asc }) => [asc(t.position), asc(t.id)],
-    }),
-    db.query.addOns.findMany({
-      where: eq(schema.addOns.eventId, eventId),
-      orderBy: (a, { asc }) => [asc(a.position), asc(a.id)],
     }),
   ]);
 
@@ -196,32 +190,6 @@ export default async function EditEventPage({
         </form>
       </section>
 
-      <section>
-        <h2 className="text-lg font-semibold">Add-ons</h2>
-        <div className="mt-4 space-y-2">
-          {addOns.map((a) => (
-            <div
-              key={a.id}
-              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm"
-            >
-              <span>
-                <strong>{a.label}</strong> — {formatCents(a.amountCents)}
-              </span>
-              <form action={deleteAddOn.bind(null, eventId, a.id)}>
-                <button className={dangerBtn}>Delete</button>
-              </form>
-            </div>
-          ))}
-        </div>
-        <form
-          action={addAddOn.bind(null, eventId)}
-          className="mt-3 flex flex-wrap gap-2 rounded-lg border border-dashed border-zinc-300 p-3"
-        >
-          <input name="label" placeholder="Label" required className={input + " mt-0 flex-1"} />
-          <input name="amount" type="number" step="0.01" min="0" placeholder="Price $" required className={input + " mt-0 w-28"} />
-          <button className={smallBtn}>Add add-on</button>
-        </form>
-      </section>
 
       <section className="border-t border-zinc-200 pt-6">
         <form action={deleteEvent.bind(null, eventId)}>

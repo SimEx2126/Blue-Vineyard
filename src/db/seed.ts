@@ -10,7 +10,6 @@ async function main() {
   // Wipe (dev seed is idempotent-by-reset)
   await db.delete(schema.payments);
   await db.delete(schema.registrations);
-  await db.delete(schema.addOns);
   await db.delete(schema.priceTiers);
   await db.delete(schema.eventSections);
   await db.delete(schema.events);
@@ -119,10 +118,6 @@ async function main() {
     { eventId: retreat.id, label: "Day visitor — Saturday (includes meals)", amountCents: 4500, position: 1 },
   ]);
 
-  await db.insert(schema.addOns).values([
-    { eventId: retreat.id, label: "Linen pack (sheets and towel)", amountCents: 3500, position: 0 },
-  ]);
-
   // ---- Full event (capacity reached) ----
   const [summit] = await db
     .insert(schema.events)
@@ -185,7 +180,6 @@ async function main() {
         tierId: summitTier.id,
         pricing: {
           tier: { id: summitTier.id, label: summitTier.label, amountCents: summitTier.amountCents },
-          addOns: [],
           totalCents: summitTier.amountCents,
         },
         amountCents: summitTier.amountCents,

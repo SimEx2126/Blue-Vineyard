@@ -9,13 +9,10 @@ type TierVM = {
   label: string;
   amountCents: number;
 };
-type AddOnVM = { id: number; label: string; amountCents: number };
-
 type Props = {
   eventId: number;
   sections: EventSectionDTO[];
   tiers: TierVM[];
-  addOns: AddOnVM[];
   choiceCounts: Record<string, Record<string, number>>;
 };
 
@@ -45,7 +42,7 @@ function Field({
   );
 }
 
-export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCounts }: Props) {
+export function RegistrationForm({ eventId, sections, tiers, choiceCounts }: Props) {
   const [answers, setAnswers] = useState<Answers>(() => {
     // Pre-populate defaults that the inputs display, so state matches the UI.
     const initial: Answers = {};
@@ -57,7 +54,6 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
   const [tierId, setTierId] = useState<number | null>(
     tiers.length === 1 ? tiers[0].id : null
   );
-  const [addOnIds, setAddOnIds] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,11 +78,8 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
   const total = useMemo(() => {
     const tier = tiers.find((t) => t.id === tierId);
     if (!tier) return null;
-    const subtotal =
-      tier.amountCents +
-      addOns.filter((a) => addOnIds.includes(a.id)).reduce((s, a) => s + a.amountCents, 0);
-    return { subtotal, discount: 0, total: subtotal };
-  }, [tiers, tierId, addOns, addOnIds]);
+    return { total: tier.amountCents };
+  }, [tiers, tierId]);
 
   // ---- Steps ----
   // Sections are grouped into a short wizard so the form isn't one long scroll.
@@ -170,7 +163,6 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
           eventId,
           answers,
           tierId,
-          addOnIds,
         }),
       });
       const data = await res.json();
@@ -624,35 +616,10 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
               </label>
             ))}
           </div>
-          {addOns.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {addOns.map((a) => (
-                <label key={a.id} className="flex items-start gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={addOnIds.includes(a.id)}
-                    onChange={() =>
-                      setAddOnIds((prev) =>
-                        prev.includes(a.id) ? prev.filter((x) => x !== a.id) : [...prev, a.id]
-                      )
-                    }
-                  />
-                  <span>
-                    {a.label} — {formatCents(a.amountCents)}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
 
           {total && (
             <div className="mt-5 max-w-sm rounded-lg border border-zinc-200 bg-white p-4 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>{formatCents(total.subtotal)}</span>
-              </div>
-              <div className="mt-2 flex justify-between border-t border-zinc-200 pt-2 font-semibold">
+              <div className="flex justify-between font-semibold">
                 <span>Total</span>
                 <span>{formatCents(total.total)}</span>
               </div>

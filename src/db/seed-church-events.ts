@@ -28,7 +28,6 @@ type EventSpec = {
   ownerEmail: string;
   sections: Section[];
   tiers: Tier[];
-  addOns?: { label: string; amountCents: number }[];
 };
 
 const PERSONAL: Section = { kind: "personal", required: true, config: { church: true } };
@@ -109,7 +108,6 @@ const EVENTS: EventSpec[] = [
       { label: "Singer", amountCents: 4500 },
       { label: "Concert only (Sabbath afternoon)", amountCents: 1500 },
     ],
-    addOns: [{ label: "Printed music pack", amountCents: 1200 }],
   },
   {
     slug: "2026-pastors-partners-retreat",
@@ -164,7 +162,6 @@ const EVENTS: EventSpec[] = [
       { label: "Minister and partner", amountCents: 30000 },
       { label: "Day attendance (per day)", amountCents: 6500 },
     ],
-    addOns: [{ label: "Airport transfer from Sydney", amountCents: 4500 }],
   },
   {
     slug: "2026-snsw-sports-fest",
@@ -273,7 +270,6 @@ const EVENTS: EventSpec[] = [
     tiers: [
       { label: "Participant", amountCents: 6000 },
     ],
-    addOns: [{ label: "Recipe folder and apron", amountCents: 2500 }],
   },
 ];
 
@@ -362,16 +358,6 @@ async function main() {
       }))
     );
 
-    if (spec.addOns?.length) {
-      await db.insert(schema.addOns).values(
-        spec.addOns.map((a, i) => ({
-          eventId: event.id,
-          label: a.label,
-          amountCents: a.amountCents,
-          position: i,
-        }))
-      );
-    }
 
     console.log(
       `Created ${spec.title} — ${spec.sections.length} sections, ${spec.tiers.length} options, owner ${spec.ownerEmail}`

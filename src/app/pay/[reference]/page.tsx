@@ -9,7 +9,6 @@ export const dynamic = "force-dynamic";
 
 type Pricing = {
   tier: { label: string; amountCents: number } | null;
-  addOns: { label: string; amountCents: number }[];
   totalCents: number;
 };
 
@@ -113,12 +112,6 @@ export default async function PayPage({
               <dd>{formatCents(pricing.tier.amountCents)}</dd>
             </div>
           )}
-          {pricing.addOns?.map((a) => (
-            <div key={a.label} className="flex justify-between">
-              <dt>{a.label}</dt>
-              <dd>{formatCents(a.amountCents)}</dd>
-            </div>
-          ))}
           <div className="flex justify-between border-t border-zinc-200 pt-2 text-base font-semibold">
             <dt>Amount due</dt>
             <dd>{formatCents(registration.amountCents)}</dd>

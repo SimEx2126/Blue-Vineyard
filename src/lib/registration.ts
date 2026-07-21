@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, or, sql } from "drizzle-orm";
+import { and, eq, gt, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { EventSectionDTO, SectionKind } from "./sections";
 
@@ -29,7 +29,7 @@ export async function getPublicEvent(slug: string) {
     where: and(eq(schema.events.slug, slug), eq(schema.events.status, "published")),
   });
   if (!event) return null;
-  const [sections, tiers, addOnRows] = await Promise.all([
+  const [sections, tiers] = await Promise.all([
     db.query.eventSections.findMany({
       where: eq(schema.eventSections.eventId, event.id),
       orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
@@ -38,12 +38,8 @@ export async function getPublicEvent(slug: string) {
       where: eq(schema.priceTiers.eventId, event.id),
       orderBy: (t, { asc }) => [asc(t.position), asc(t.id)],
     }),
-    db.query.addOns.findMany({
-      where: eq(schema.addOns.eventId, event.id),
-      orderBy: (a, { asc }) => [asc(a.position), asc(a.id)],
-    }),
   ]);
-  return { event, sections, tiers, addOns: addOnRows };
+  return { event, sections, tiers };
 }
 
 export function toSectionDTOs(
@@ -112,11 +108,3 @@ export async function choiceOptionCounts(eventId: number, sectionId: number) {
 }
 
 
-export async function validateAddOnIds(eventId: number, ids: number[]) {
-  if (ids.length === 0) return [];
-  const rows = await db.query.addOns.findMany({
-    where: and(eq(schema.addOns.eventId, eventId), inArray(schema.addOns.id, ids)),
-  });
-  if (rows.length !== new Set(ids).size) return null;
-  return rows;
-}

@@ -23,7 +23,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const data = await getPublicEvent(slug);
   if (!data) notFound();
-  const { event, sections, tiers, addOns } = data;
+  const { event, sections, tiers } = data;
 
   const openState = await getOpenState(event);
   const sectionDTOs = toSectionDTOs(sections);
@@ -108,7 +108,6 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                 label: t.label,
                 amountCents: t.amountCents,
               }))}
-              addOns={addOns.map((a) => ({ id: a.id, label: a.label, amountCents: a.amountCents }))}
               choiceCounts={choiceCounts}
             />
           </>
