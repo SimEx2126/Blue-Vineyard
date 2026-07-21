@@ -63,7 +63,8 @@ export const eventSections = pgTable("event_sections", {
   config: jsonb("config").notNull().default({}),
 });
 
-// Mutually-exclusive registration options (early bird / standard / day passes).
+// Mutually-exclusive registration options (e.g. Adult / Child / Day pass),
+// each at a fixed price.
 export const priceTiers = pgTable("price_tiers", {
   id: serial("id").primaryKey(),
   eventId: integer("event_id")
@@ -71,8 +72,6 @@ export const priceTiers = pgTable("price_tiers", {
     .references(() => events.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
   amountCents: integer("amount_cents").notNull(),
-  availableFrom: timestamp("available_from", { withTimezone: true }),
-  availableUntil: timestamp("available_until", { withTimezone: true }),
   position: integer("position").notNull().default(0),
 });
 

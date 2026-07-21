@@ -115,21 +115,8 @@ async function main() {
     .returning();
 
   await db.insert(schema.priceTiers).values([
-    {
-      eventId: retreat.id,
-      label: "Early bird registration",
-      amountCents: 23000,
-      availableUntil: new Date(now.getTime() + 14 * DAY),
-      position: 0,
-    },
-    {
-      eventId: retreat.id,
-      label: "Standard registration",
-      amountCents: 25000,
-      availableFrom: new Date(now.getTime() + 14 * DAY),
-      position: 1,
-    },
-    { eventId: retreat.id, label: "Day visitor — Saturday (includes meals)", amountCents: 4500, position: 2 },
+    { eventId: retreat.id, label: "Standard registration", amountCents: 25000, position: 0 },
+    { eventId: retreat.id, label: "Day visitor — Saturday (includes meals)", amountCents: 4500, position: 1 },
   ]);
 
   await db.insert(schema.addOns).values([

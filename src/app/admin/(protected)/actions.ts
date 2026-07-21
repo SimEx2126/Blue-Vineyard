@@ -201,8 +201,6 @@ export async function addTier(eventId: number, fd: FormData) {
     eventId,
     label,
     amountCents: amount,
-    availableFrom: date(fd, "availableFrom"),
-    availableUntil: date(fd, "availableUntil"),
     position: existing.length,
   });
   revalidatePath(`/admin/events/${eventId}/edit`);

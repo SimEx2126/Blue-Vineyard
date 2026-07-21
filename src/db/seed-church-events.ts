@@ -11,7 +11,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const at = (days: number) => new Date(Date.now() + days * DAY);
 
 type Section = { kind: string; required: boolean; config: Record<string, unknown> };
-type Tier = { label: string; amountCents: number; availableUntil?: Date; availableFrom?: Date };
+type Tier = { label: string; amountCents: number };
 
 type EventSpec = {
   slug: string;
@@ -106,8 +106,7 @@ const EVENTS: EventSpec[] = [
       MEDIA,
     ],
     tiers: [
-      { label: "Singer — early bird", amountCents: 3500, availableUntil: at(20) },
-      { label: "Singer — standard", amountCents: 4500, availableFrom: at(20) },
+      { label: "Singer", amountCents: 4500 },
       { label: "Concert only (Sabbath afternoon)", amountCents: 1500 },
     ],
     addOns: [{ label: "Printed music pack", amountCents: 1200 }],
@@ -272,8 +271,7 @@ const EVENTS: EventSpec[] = [
       ),
     ],
     tiers: [
-      { label: "Participant — early bird", amountCents: 5000, availableUntil: at(14) },
-      { label: "Participant", amountCents: 6000, availableFrom: at(14) },
+      { label: "Participant", amountCents: 6000 },
     ],
     addOns: [{ label: "Recipe folder and apron", amountCents: 2500 }],
   },
@@ -360,8 +358,6 @@ async function main() {
         eventId: event.id,
         label: t.label,
         amountCents: t.amountCents,
-        availableFrom: t.availableFrom ?? null,
-        availableUntil: t.availableUntil ?? null,
         position: i,
       }))
     );

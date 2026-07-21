@@ -8,9 +8,6 @@ type TierVM = {
   id: number;
   label: string;
   amountCents: number;
-  availableFrom: string | null;
-  availableUntil: string | null;
-  active: boolean;
 };
 type AddOnVM = { id: number; label: string; amountCents: number };
 
@@ -58,7 +55,7 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
     return initial;
   });
   const [tierId, setTierId] = useState<number | null>(
-    tiers.filter((t) => t.active).length === 1 ? tiers.find((t) => t.active)!.id : null
+    tiers.length === 1 ? tiers[0].id : null
   );
   const [addOnIds, setAddOnIds] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -618,16 +615,11 @@ export function RegistrationForm({ eventId, sections, tiers, addOns, choiceCount
                   name="tier"
                   className="mt-0.5"
                   required
-                  disabled={!t.active}
                   checked={tierId === t.id}
                   onChange={() => setTierId(t.id)}
                 />
-                <span className={t.active ? "" : "text-zinc-400"}>
+                <span>
                   {t.label} — {formatCents(t.amountCents)}
-                  {!t.active &&
-                    (t.availableFrom && new Date(t.availableFrom) > new Date()
-                      ? ` (available from ${new Date(t.availableFrom).toLocaleDateString("en-AU")})`
-                      : " (no longer available)")}
                 </span>
               </label>
             ))}

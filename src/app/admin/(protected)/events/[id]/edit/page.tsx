@@ -169,8 +169,7 @@ export default async function EditEventPage({
       <section>
         <h2 className="text-lg font-semibold">Registration options</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          Mutually-exclusive options (early bird, standard, day passes). Leave dates blank for
-          always-available options.
+          Mutually-exclusive options (e.g. Adult, Child, Day pass), each at a fixed price.
         </p>
         <div className="mt-4 space-y-2">
           {tiers.map((t) => (
@@ -180,8 +179,6 @@ export default async function EditEventPage({
             >
               <span>
                 <strong>{t.label}</strong> — {formatCents(t.amountCents)}
-                {t.availableFrom && ` · from ${t.availableFrom.toLocaleDateString("en-AU")}`}
-                {t.availableUntil && ` · until ${t.availableUntil.toLocaleDateString("en-AU")}`}
               </span>
               <form action={deleteTier.bind(null, eventId, t.id)}>
                 <button className={dangerBtn}>Delete</button>
@@ -191,13 +188,11 @@ export default async function EditEventPage({
         </div>
         <form
           action={addTier.bind(null, eventId)}
-          className="mt-3 grid gap-2 rounded-lg border border-dashed border-zinc-300 p-3 sm:grid-cols-5"
+          className="mt-3 grid gap-2 rounded-lg border border-dashed border-zinc-300 p-3 sm:grid-cols-3"
         >
           <input name="label" placeholder="Label" required className={input + " mt-0 sm:col-span-2"} />
           <input name="amount" type="number" step="0.01" min="0" placeholder="Price $" required className={input + " mt-0"} />
-          <input name="availableFrom" type="datetime-local" className={input + " mt-0"} />
-          <input name="availableUntil" type="datetime-local" className={input + " mt-0"} />
-          <button className={smallBtn + " sm:col-span-5 sm:justify-self-start"}>Add option</button>
+          <button className={smallBtn + " sm:col-span-3 sm:justify-self-start"}>Add option</button>
         </form>
       </section>
 

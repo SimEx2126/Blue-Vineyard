@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { buildAnswersSchema, extractContact, type SectionConfigMap } from "@/lib/sections";
-import { computeTotal, tierIsActive } from "@/lib/pricing";
+import { computeTotal } from "@/lib/pricing";
 import {
   choiceOptionCounts,
   getOpenState,
@@ -101,15 +101,7 @@ export async function POST(req: Request) {
       id: tierRow.id,
       label: tierRow.label,
       amountCents: tierRow.amountCents,
-      availableFrom: tierRow.availableFrom?.toISOString() ?? null,
-      availableUntil: tierRow.availableUntil?.toISOString() ?? null,
     };
-    if (!tierIsActive(tierDTO, new Date())) {
-      return NextResponse.json(
-        { error: "That registration option is no longer available." },
-        { status: 409 }
-      );
-    }
 
     const selectedAddOns = await validateAddOnIds(event.id, body.addOnIds);
     if (selectedAddOns === null) {

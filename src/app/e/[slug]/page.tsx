@@ -6,7 +6,6 @@ import {
   getPublicEvent,
   toSectionDTOs,
 } from "@/lib/registration";
-import { tierIsActive } from "@/lib/pricing";
 import { RegistrationForm } from "@/components/RegistrationForm";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +27,6 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
 
   const openState = await getOpenState(event);
   const sectionDTOs = toSectionDTOs(sections);
-  const now = new Date();
 
   // Per-option remaining capacity for choice sections
   const choiceCounts: Record<string, Record<string, number>> = {};
@@ -109,18 +107,6 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                 id: t.id,
                 label: t.label,
                 amountCents: t.amountCents,
-                availableFrom: t.availableFrom?.toISOString() ?? null,
-                availableUntil: t.availableUntil?.toISOString() ?? null,
-                active: tierIsActive(
-                  {
-                    id: t.id,
-                    label: t.label,
-                    amountCents: t.amountCents,
-                    availableFrom: t.availableFrom?.toISOString() ?? null,
-                    availableUntil: t.availableUntil?.toISOString() ?? null,
-                  },
-                  now
-                ),
               }))}
               addOns={addOns.map((a) => ({ id: a.id, label: a.label, amountCents: a.amountCents }))}
               choiceCounts={choiceCounts}
