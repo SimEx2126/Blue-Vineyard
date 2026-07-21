@@ -46,6 +46,40 @@ async function orgIdFor(user: { orgId: number | null }) {
   return org.id;
 }
 
+// Turns a title into a URL-safe slug: lowercase, accents stripped, apostrophes
+// dropped (so "Women's" → "womens"), everything else collapsed to hyphens.
+// Capped short of the 200-char column limit to leave room for a "-2" suffix.
+function slugify(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 180);
+}
+
+// The slug is the event's public URL and is globally unique, so on creation it
+// is derived from the title rather than typed. If the base is taken, append
+// -2, -3, … until it is free.
+async function generateEventSlug(title: string) {
+  const base = slugify(title) || "event";
+  let candidate = base;
+  let n = 1;
+  // eslint-disable-next-line no-await-in-loop
+  while (
+    await db.query.events.findFirst({
+      where: eq(schema.events.slug, candidate),
+      columns: { id: true },
+    })
+  ) {
+    n += 1;
+    candidate = `${base}-${n}`;
+  }
+  return candidate;
+}
+
 function eventFieldsFrom(fd: FormData) {
   return {
     slug: str(fd, "slug") ?? "",
@@ -70,10 +104,13 @@ export async function createEvent(fd: FormData) {
   // Viewers are read-only; only admins and organisers create events.
   if (!canManageEvents(user)) notFound();
   const fields = eventFieldsFrom(fd);
-  if (!fields.slug || !fields.title) redirect("/admin/events/new?error=Slug+and+title+are+required");
+  if (!fields.title) redirect("/admin/events/new?error=A+title+is+required");
+  // Slug is not typed on creation — derive a unique one from the title. This
+  // overrides the empty slug from the (now absent) form field.
+  const slug = await generateEventSlug(fields.title);
   const [event] = await db
     .insert(schema.events)
-    .values({ ...fields, orgId: await orgIdFor(user), ownerId: user.id })
+    .values({ ...fields, slug, orgId: await orgIdFor(user), ownerId: user.id })
     .returning();
   revalidatePath("/admin/events");
   redirect(`/admin/events/${event.id}/edit`);

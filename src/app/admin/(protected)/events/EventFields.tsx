@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { schema } from "@/db";
 
 type EventRow = typeof schema.events.$inferSelect;
@@ -6,23 +9,51 @@ const input =
   "mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600";
 const label = "block text-sm font-medium text-zinc-700";
 
-function dtLocal(d: Date | null | undefined) {
+// Pre-filled on a new event so the field is never blank; the organiser can edit
+// or clear it. Mirrors the runtime fallback used when no message is saved.
+const DEFAULT_FULL_MESSAGE = "Registrations for this event are now full.";
+
+// Date only (no time) for the date-typed fields.
+function dLocal(d: Date | null | undefined) {
   if (!d) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function EventFields({ event }: { event?: EventRow }) {
+  // Registrations close follows the event end date: setting the end date fills
+  // in the close date, until the organiser sets close to something of their
+  // own. On an existing event with a saved close date, that saved value wins.
+  const [endsAt, setEndsAt] = useState(dLocal(event?.endsAt));
+  const [closesAt, setClosesAt] = useState(
+    event?.closesAt ? dLocal(event.closesAt) : dLocal(event?.endsAt)
+  );
+  const [closeTouched, setCloseTouched] = useState(Boolean(event?.closesAt));
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <label className={label}>
         Title
         <input name="title" required defaultValue={event?.title} className={input} />
       </label>
-      <label className={label}>
-        Slug (URL)
-        <input name="slug" required defaultValue={event?.slug} className={input} placeholder="2026-womens-retreat" />
-      </label>
+      {/* The slug is the event's public web address. On creation it is derived
+          from the title automatically, so the field appears only when editing
+          an existing event — where changing it is a deliberate act. */}
+      {event && (
+        <label className={label}>
+          Slug (URL)
+          <input
+            name="slug"
+            required
+            defaultValue={event.slug}
+            className={input}
+            placeholder="2026-womens-retreat"
+          />
+          <span className="mt-1 block text-xs font-normal text-zinc-500">
+            The public web address (/e/…). Changing it updates the shared link and QR code.
+          </span>
+        </label>
+      )}
       <label className={label}>
         Category
         <input name="category" defaultValue={event?.category ?? ""} className={input} placeholder="Womens Ministries" />
@@ -39,22 +70,49 @@ export function EventFields({ event }: { event?: EventRow }) {
       </div>
       <label className={label}>
         Event starts
-        <input type="datetime-local" name="startsAt" defaultValue={dtLocal(event?.startsAt)} className={input} />
+        <input type="date" name="startsAt" defaultValue={dLocal(event?.startsAt)} className={input} />
       </label>
       <label className={label}>
         Event ends
-        <input type="datetime-local" name="endsAt" defaultValue={dtLocal(event?.endsAt)} className={input} />
+        <input
+          type="date"
+          name="endsAt"
+          value={endsAt}
+          onChange={(e) => {
+            setEndsAt(e.target.value);
+            // Mirror the end date into the close date until it is set explicitly.
+            if (!closeTouched) setClosesAt(e.target.value);
+          }}
+          className={input}
+        />
       </label>
       <label className={label}>
         Registrations open
-        <input type="datetime-local" name="opensAt" defaultValue={dtLocal(event?.opensAt)} className={input} />
+        {/* Defaults to today on a new event; the client's date is intentional,
+            so hydration is allowed to differ from the server render. */}
+        <input
+          type="date"
+          name="opensAt"
+          defaultValue={event?.opensAt ? dLocal(event.opensAt) : dLocal(new Date())}
+          suppressHydrationWarning
+          className={input}
+        />
       </label>
       <label className={label}>
         Registrations close
-        <input type="datetime-local" name="closesAt" defaultValue={dtLocal(event?.closesAt)} className={input} />
+        <input
+          type="date"
+          name="closesAt"
+          value={closesAt}
+          onChange={(e) => {
+            setClosesAt(e.target.value);
+            setCloseTouched(true);
+          }}
+          className={input}
+        />
       </label>
       <label className={label}>
-        Capacity (blank = unlimited)
+        Attendees (blank = unlimited)
         <input type="number" name="capacity" min={1} defaultValue={event?.capacity ?? ""} className={input} />
       </label>
       <label className={label}>
@@ -68,7 +126,11 @@ export function EventFields({ event }: { event?: EventRow }) {
       <div className="sm:col-span-2">
         <label className={label}>
           Message shown when full
-          <input name="fullMessage" defaultValue={event?.fullMessage ?? ""} className={input} />
+          <input
+            name="fullMessage"
+            defaultValue={event?.fullMessage ?? DEFAULT_FULL_MESSAGE}
+            className={input}
+          />
         </label>
       </div>
       <div className="sm:col-span-2">
