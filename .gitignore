@@ -48,3 +48,6 @@ next-env.d.ts
 *.swp
 *.swo
 *~
+
+# but do track the values-free example
+!.env.example
