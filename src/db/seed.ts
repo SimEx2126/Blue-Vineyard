@@ -11,7 +11,6 @@ async function main() {
   await db.delete(schema.payments);
   await db.delete(schema.registrations);
   await db.delete(schema.priceTiers);
-  await db.delete(schema.eventSections);
   await db.delete(schema.events);
   await db.delete(schema.orgs);
 
@@ -20,7 +19,7 @@ async function main() {
     .values({ name: "SNSW Events", brandColor: "#0f766e" })
     .returning();
 
-  // ---- Main demo event (modelled on the Women's Retreat pattern) ----
+  // ---- Main demo event ----
   const [retreat] = await db
     .insert(schema.events)
     .values({
@@ -40,77 +39,9 @@ async function main() {
       closesAt: new Date(now.getTime() + 80 * DAY),
       capacity: 96,
       fullMessage: "Registrations for this retreat have reached capacity.",
+      requiresPayment: true,
       status: "published",
     })
-    .returning();
-
-  let pos = 0;
-  const section = (
-    kind: string,
-    required: boolean,
-    config: unknown
-  ): typeof schema.eventSections.$inferInsert => ({
-    eventId: retreat.id,
-    kind,
-    position: pos++,
-    required,
-    config: config as Record<string, unknown>,
-  });
-
-  const inserted = await db
-    .insert(schema.eventSections)
-    .values([
-      section("text_block", false, {
-        title: "What to bring",
-        body:
-          "Jindabyne may be cold — come prepared: warm jacket, comfortable walking shoes, " +
-          "sleeping bag or linen, towel and toiletries, casual clothes for wet or cold weather, and your Bible.",
-      }),
-      section("personal", true, { church: true }),
-      section("address", true, {}),
-      section("medical", true, { medicare: true }),
-      section("emergency", true, {}),
-      section("consent", true, {
-        title: "Authorisation for emergency medical care",
-        body:
-          "In the event of accident or illness, I authorise the Event Director to consent on my behalf, " +
-          "where it is impractical to communicate with me, to any medical or hospital treatment deemed " +
-          "necessary by a licensed physician. I agree to pay the appropriate fees for such treatment and " +
-          "any emergency transportation. I understand the risks associated with participation in this " +
-          "event and agree to attend on this understanding.",
-      }),
-      section("dietary", false, {
-        options: [
-          "Anaphylactic (please provide details below)",
-          "Gluten free",
-          "Vegan",
-          "Other (please provide details below)",
-        ],
-        detailsPrompt:
-          "Please provide details if you are anaphylactic to anything or have other dietary requirements",
-      }),
-      section("choice", true, {
-        label: "Please select one workshop",
-        options: [
-          { id: "start-strong", label: "Start Strong, Stay Strong — women's physical health", capacity: 40 },
-          { id: "inner-glow", label: "Find Your Inner Glow — nutrition & skin health", capacity: 40 },
-          { id: "paper-craft", label: "Paper Craft Workshop", capacity: 20 },
-        ],
-        multiple: false,
-      }),
-      section("media_consent", false, {
-        options: ["Photo", "Video", "Livestreaming", "I would rather not"],
-      }),
-      section("custom_question", false, {
-        label: "I would like to share a room with",
-        type: "text",
-        placeholder: "Name of preferred roommate",
-      }),
-      section("custom_question", false, {
-        label: "Special needs or anything else you would like to tell us",
-        type: "textarea",
-      }),
-    ])
     .returning();
 
   await db.insert(schema.priceTiers).values([
@@ -134,21 +65,9 @@ async function main() {
       closesAt: new Date(now.getTime() + 35 * DAY),
       capacity: 2,
       fullMessage: "The Youth Summit is sold out. Contact the youth department to join the waiting list.",
+      requiresPayment: true,
       status: "published",
     })
-    .returning();
-
-  const [summitPersonal] = await db
-    .insert(schema.eventSections)
-    .values([
-      {
-        eventId: summit.id,
-        kind: "personal",
-        position: 0,
-        required: true,
-        config: { church: false },
-      },
-    ])
     .returning();
 
   const [summitTier] = await db
@@ -169,14 +88,6 @@ async function main() {
         status: "confirmed",
         contactName: name,
         contactEmail: email,
-        answers: {
-          [String(summitPersonal.id)]: {
-            firstName: name.split(" ")[0],
-            lastName: name.split(" ").slice(1).join(" "),
-            email,
-            phone: "0400 000 000",
-          },
-        },
         tierId: summitTier.id,
         pricing: {
           tier: { id: summitTier.id, label: summitTier.label, amountCents: summitTier.amountCents },
@@ -212,7 +123,7 @@ async function main() {
   });
 
   console.log(
-    `Seeded org ${org.name}: retreat #${retreat.id} (${inserted.length} sections), summit #${summit.id} (full), camporee (opens soon).`
+    `Seeded org ${org.name}: retreat #${retreat.id}, summit #${summit.id} (full), camporee (opens soon).`
   );
   process.exit(0);
 }

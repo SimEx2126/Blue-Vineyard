@@ -1,7 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { assertCanViewEvent } from "@/lib/access";
-import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
 
 function csvCell(value: unknown): string {
   if (value == null || value === "") return "";
@@ -18,21 +17,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const eventId = Number(id);
 
   // Route handlers do not run the (protected) layout, so this check is the
-  // only thing standing in front of a CSV of every registrant's medical
-  // details and Medicare numbers.
+  // only thing standing in front of the registrant CSV.
   const { event } = await assertCanViewEvent(eventId);
 
-  const [sections, registrations] = await Promise.all([
-    db.query.eventSections.findMany({
-      where: eq(schema.eventSections.eventId, eventId),
-      orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
-    }),
-    db.query.registrations.findMany({
-      where: eq(schema.registrations.eventId, eventId),
-      orderBy: (r, { asc }) => [asc(r.createdAt)],
-    }),
-  ]);
-  const dataSections = sections.filter((s) => s.kind !== "text_block");
+  const registrations = await db.query.registrations.findMany({
+    where: eq(schema.registrations.eventId, eventId),
+    orderBy: (r, { asc }) => [asc(r.createdAt)],
+  });
 
   const paymentRows = registrations.length
     ? await db.query.payments.findMany({
@@ -47,45 +38,28 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     if (p.kind === "charge") paymentByReg.set(p.registrationId, p.status);
   }
 
-  const sectionHeader = (s: (typeof sections)[number]) =>
-    s.kind === "custom_question"
-      ? (s.config as SectionConfigMap["custom_question"]).label
-      : SECTION_LABELS[s.kind as SectionKind] ?? s.kind;
-
   const header = [
     "ID",
     "Ticket no.",
     "Submitted",
     "Status",
-    "Name",
+    "Full name",
     "Email",
+    "Gender",
+    "Age",
+    "Address",
+    "Parent phone",
+    "Parent consent",
+    "Media consent",
     "Option",
     "Total",
     "Payment",
-    ...dataSections.map(sectionHeader),
   ];
 
   const rows = registrations.map((r) => {
-    const answers = r.answers as Record<string, Record<string, unknown>>;
     const pricing = r.pricing as {
       tier: { label: string } | null;
     };
-    const sectionCells = dataSections.map((s) => {
-      const a = answers[String(s.id)];
-      if (!a) return "";
-      if (s.kind === "choice") {
-        const cfg = s.config as SectionConfigMap["choice"];
-        const sel = a.selected;
-        const toLabel = (v: unknown) => cfg.options.find((o) => o.id === v)?.label ?? String(v);
-        return csvCell(Array.isArray(sel) ? sel.map(toLabel) : toLabel(sel));
-      }
-      const parts = Object.entries(a)
-        .filter(([, v]) => v !== "" && v != null)
-        .map(([k, v]) =>
-          typeof v === "boolean" ? (v ? k : `not ${k}`) : Array.isArray(v) ? v.join("; ") : `${k}: ${v}`
-        );
-      return csvCell(parts.join(" | "));
-    });
     return [
       r.id,
       csvCell(r.reference),
@@ -93,10 +67,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       r.status,
       csvCell(r.contactName),
       csvCell(r.contactEmail),
+      csvCell(r.gender),
+      csvCell(r.age),
+      csvCell(r.address),
+      csvCell(r.parentPhone),
+      csvCell(r.parentConsent),
+      csvCell(r.mediaConsent),
       csvCell(pricing.tier?.label),
       (r.amountCents / 100).toFixed(2),
       paymentByReg.get(r.id) ?? (r.amountCents === 0 ? "free" : ""),
-      ...sectionCells,
     ].join(",");
   });
 

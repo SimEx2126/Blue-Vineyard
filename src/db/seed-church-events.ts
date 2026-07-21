@@ -1,7 +1,5 @@
-// Adds a spread of church events across different ministries, each with its
-// own mix of form sections — a chorister needs a voice part, a cook needs no
-// medical form, a sports player needs a waiver. Idempotent: an event whose slug
-// already exists is left alone.
+// Adds a spread of church events across different ministries. Idempotent: an
+// event whose slug already exists is left alone.
 import "./load-env";
 import { eq } from "drizzle-orm";
 import { db, schema, authSchema } from "./index";
@@ -10,7 +8,6 @@ import { auth } from "../lib/auth";
 const DAY = 24 * 60 * 60 * 1000;
 const at = (days: number) => new Date(Date.now() + days * DAY);
 
-type Section = { kind: string; required: boolean; config: Record<string, unknown> };
 type Tier = { label: string; amountCents: number };
 
 type EventSpec = {
@@ -26,28 +23,7 @@ type EventSpec = {
   capacity: number;
   fullMessage: string;
   ownerEmail: string;
-  sections: Section[];
   tiers: Tier[];
-};
-
-const PERSONAL: Section = { kind: "personal", required: true, config: { church: true } };
-const CONSENT = (body: string): Section => ({
-  kind: "consent",
-  required: true,
-  config: { title: "Agreement", body },
-});
-const DIETARY: Section = {
-  kind: "dietary",
-  required: false,
-  config: {
-    options: ["Anaphylactic (please provide details below)", "Gluten free", "Vegan", "Other"],
-    detailsPrompt: "Please give details of any allergy or other dietary requirement",
-  },
-};
-const MEDIA: Section = {
-  kind: "media_consent",
-  required: false,
-  config: { options: ["Photo", "Video", "Livestreaming", "I would rather not"] },
 };
 
 const EVENTS: EventSpec[] = [
@@ -67,43 +43,6 @@ const EVENTS: EventSpec[] = [
     capacity: 120,
     fullMessage: "The massed choir is full. Please contact the music department to be added to the reserve list.",
     ownerEmail: "music@example.org",
-    sections: [
-      {
-        kind: "text_block",
-        required: false,
-        config: {
-          title: "Before you register",
-          body: "Rehearsals run Friday 4pm and Sabbath 9am. Please bring a black folder and a music stand if you have one.",
-        },
-      },
-      PERSONAL,
-      {
-        kind: "choice",
-        required: true,
-        config: {
-          label: "Which part do you sing?",
-          options: [
-            { id: "soprano", label: "Soprano", capacity: 40 },
-            { id: "alto", label: "Alto", capacity: 40 },
-            { id: "tenor", label: "Tenor", capacity: 20 },
-            { id: "bass", label: "Bass", capacity: 20 },
-          ],
-          multiple: false,
-        },
-      },
-      {
-        kind: "custom_question",
-        required: false,
-        config: { label: "Which choir or church do you sing with?", type: "text" },
-      },
-      {
-        kind: "custom_question",
-        required: false,
-        config: { label: "I can help with setting up or packing down", type: "checkbox" },
-      },
-      DIETARY,
-      MEDIA,
-    ],
     tiers: [
       { label: "Singer", amountCents: 4500 },
       { label: "Concert only (Sabbath afternoon)", amountCents: 1500 },
@@ -117,46 +56,13 @@ const EVENTS: EventSpec[] = [
     heroImageUrl: "/demo-banners/pastors-retreat.svg",
     description:
       "Four days of rest, worship and continuing education for ministers and their partners.\n\n" +
-      "Sessions run each morning, with afternoons free. Childcare is available on request — " +
-      "please note the ages of any children in the box at the end of the form.",
+      "Sessions run each morning, with afternoons free. Childcare is available on request.",
     startsAt: at(105),
     endsAt: at(108),
     closesAt: at(72),
     capacity: 60,
     fullMessage: "Registrations for the retreat have closed. Please contact the Ministerial Department.",
     ownerEmail: "ministerial@example.org",
-    sections: [
-      PERSONAL,
-      { kind: "address", required: true, config: {} },
-      {
-        kind: "choice",
-        required: true,
-        config: {
-          label: "Accommodation",
-          options: [
-            { id: "single", label: "Single room", capacity: 20 },
-            { id: "twin", label: "Twin share", capacity: 30 },
-            { id: "own", label: "I will arrange my own", capacity: null },
-          ],
-          multiple: false,
-        },
-      },
-      {
-        kind: "custom_question",
-        required: false,
-        config: { label: "Name of partner attending with you", type: "text" },
-      },
-      {
-        kind: "custom_question",
-        required: false,
-        config: {
-          label: "Childcare required — please list ages",
-          type: "textarea",
-          placeholder: "e.g. 3 and 7",
-        },
-      },
-      DIETARY,
-    ],
     tiers: [
       { label: "Minister", amountCents: 18000 },
       { label: "Minister and partner", amountCents: 30000 },
@@ -180,37 +86,6 @@ const EVENTS: EventSpec[] = [
     capacity: 200,
     fullMessage: "Sports Fest has reached capacity. Spectators may still attend on the day.",
     ownerEmail: "youth@example.org",
-    sections: [
-      PERSONAL,
-      {
-        kind: "choice",
-        required: true,
-        config: {
-          label: "Which sports will you play?",
-          options: [
-            { id: "basketball", label: "Basketball", capacity: 60 },
-            { id: "volleyball", label: "Volleyball", capacity: 60 },
-            { id: "soccer", label: "Soccer", capacity: 60 },
-            { id: "athletics", label: "Athletics", capacity: 40 },
-          ],
-          multiple: true,
-        },
-      },
-      {
-        kind: "custom_question",
-        required: false,
-        config: { label: "Team name, if you are entering as a team", type: "text" },
-      },
-      { kind: "emergency", required: true, config: {} },
-      { kind: "medical", required: false, config: { medicare: true } },
-      CONSENT(
-        "I understand that participation in sport carries a risk of injury. I confirm that I am " +
-          "fit to take part, and I agree to follow the directions of the umpires and organisers. " +
-          "In the event of injury I authorise the organisers to obtain medical treatment on my behalf " +
-          "where it is impractical to contact me or my emergency contact first."
-      ),
-      MEDIA,
-    ],
     tiers: [
       { label: "Player", amountCents: 2500 },
       { label: "Spectator (includes lunch)", amountCents: 0 },
@@ -234,39 +109,6 @@ const EVENTS: EventSpec[] = [
     capacity: 24,
     fullMessage: "The cookery course is full. It runs again in autumn — contact camp ministries to be notified.",
     ownerEmail: "youth@example.org",
-    sections: [
-      PERSONAL,
-      {
-        kind: "choice",
-        required: true,
-        config: {
-          label: "Which stream suits you?",
-          options: [
-            { id: "beginner", label: "Beginner — never cooked at scale", capacity: 12 },
-            { id: "experienced", label: "Experienced — I have helped in a camp kitchen", capacity: 12 },
-          ],
-          multiple: false,
-        },
-      },
-      {
-        kind: "custom_question",
-        required: false,
-        config: { label: "Do you hold a current food handling certificate?", type: "checkbox" },
-      },
-      {
-        kind: "custom_question",
-        required: false,
-        config: {
-          label: "Anything you particularly want covered?",
-          type: "textarea",
-        },
-      },
-      DIETARY,
-      CONSENT(
-        "I agree to follow all kitchen safety directions, to wear closed-in shoes in the kitchen, " +
-          "and to disclose any condition that may affect my safe participation."
-      ),
-    ],
     tiers: [
       { label: "Participant", amountCents: 6000 },
     ],
@@ -335,19 +177,10 @@ async function main() {
         closesAt: spec.closesAt,
         capacity: spec.capacity,
         fullMessage: spec.fullMessage,
+        requiresPayment: true,
         status: "published",
       })
       .returning();
-
-    await db.insert(schema.eventSections).values(
-      spec.sections.map((s, i) => ({
-        eventId: event.id,
-        kind: s.kind,
-        position: i,
-        required: s.required,
-        config: s.config,
-      }))
-    );
 
     await db.insert(schema.priceTiers).values(
       spec.tiers.map((t, i) => ({
@@ -358,9 +191,8 @@ async function main() {
       }))
     );
 
-
     console.log(
-      `Created ${spec.title} — ${spec.sections.length} sections, ${spec.tiers.length} options, owner ${spec.ownerEmail}`
+      `Created ${spec.title} — ${spec.tiers.length} options, owner ${spec.ownerEmail}`
     );
   }
 

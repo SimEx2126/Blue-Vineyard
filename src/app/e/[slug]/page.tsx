@@ -1,11 +1,5 @@
 import { notFound } from "next/navigation";
-import {
-  choiceOptionCounts,
-  countActiveRegistrations,
-  getOpenState,
-  getPublicEvent,
-  toSectionDTOs,
-} from "@/lib/registration";
+import { countActiveRegistrations, getOpenState, getPublicEvent } from "@/lib/registration";
 import { RegistrationForm } from "@/components/RegistrationForm";
 
 export const dynamic = "force-dynamic";
@@ -23,18 +17,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const data = await getPublicEvent(slug);
   if (!data) notFound();
-  const { event, sections, tiers } = data;
+  const { event, tiers } = data;
 
   const openState = await getOpenState(event);
-  const sectionDTOs = toSectionDTOs(sections);
-
-  // Per-option remaining capacity for choice sections
-  const choiceCounts: Record<string, Record<string, number>> = {};
-  for (const s of sectionDTOs) {
-    if (s.kind === "choice") {
-      choiceCounts[String(s.id)] = await choiceOptionCounts(event.id, s.id);
-    }
-  }
 
   const spotsLeft =
     event.capacity != null ? event.capacity - (await countActiveRegistrations(event.id)) : null;
@@ -102,13 +87,13 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <h2 className="text-xl font-semibold">Register</h2>
             <RegistrationForm
               eventId={event.id}
-              sections={sectionDTOs}
-              tiers={tiers.map((t) => ({
-                id: t.id,
-                label: t.label,
-                amountCents: t.amountCents,
-              }))}
-              choiceCounts={choiceCounts}
+              // A free event offers no price options, whatever tiers linger
+              // from when it was paid.
+              tiers={
+                event.requiresPayment
+                  ? tiers.map((t) => ({ id: t.id, label: t.label, amountCents: t.amountCents }))
+                  : []
+              }
             />
           </>
         ) : (

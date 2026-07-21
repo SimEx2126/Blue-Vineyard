@@ -3,41 +3,10 @@ import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
-import { SECTION_LABELS, type SectionConfigMap, type SectionKind } from "@/lib/sections";
 import { assertCanViewEvent } from "@/lib/access";
 import { markPaymentReceived } from "../../../../actions";
 
 export const dynamic = "force-dynamic";
-
-const FIELD_LABELS: Record<string, string> = {
-  firstName: "First name",
-  lastName: "Last name",
-  email: "Email",
-  phone: "Phone",
-  church: "Church",
-  street: "Street",
-  city: "City",
-  state: "State",
-  postcode: "Postcode",
-  country: "Country",
-  doctorName: "Family doctor",
-  doctorPhone: "Doctor's phone",
-  medicare: "Medicare number",
-  name: "Name",
-  relationship: "Relationship",
-  mobile: "Mobile",
-  agreed: "Agreed",
-  selected: "Selected",
-  details: "Details",
-  value: "Answer",
-};
-
-function display(value: unknown): string {
-  if (value == null || value === "") return "—";
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  return String(value);
-}
 
 export default async function RegistrationDetailPage({
   params,
@@ -49,8 +18,8 @@ export default async function RegistrationDetailPage({
   const registrationId = Number(regId);
   if (!Number.isInteger(registrationId)) notFound();
 
-  // This page renders Medicare number, doctor name and phone — gate it before
-  // reading anything. Viewers may look; only editors flip the read marker.
+  // Gate before reading anything. Viewers may look; only editors flip the
+  // read marker.
   const { canEdit } = await assertCanViewEvent(eventId);
 
   const registration = await db.query.registrations.findFirst({
@@ -61,13 +30,7 @@ export default async function RegistrationDetailPage({
   });
   if (!registration) notFound();
 
-  const [event, sections] = await Promise.all([
-    db.query.events.findFirst({ where: eq(schema.events.id, eventId) }),
-    db.query.eventSections.findMany({
-      where: eq(schema.eventSections.eventId, eventId),
-      orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
-    }),
-  ]);
+  const event = await db.query.events.findFirst({ where: eq(schema.events.id, eventId) });
 
   if (canEdit && !registration.readAt) {
     await db
@@ -76,20 +39,9 @@ export default async function RegistrationDetailPage({
       .where(eq(schema.registrations.id, registrationId));
   }
 
-  const answers = registration.answers as Record<string, Record<string, unknown>>;
   const pricing = registration.pricing as {
     tier: { label: string; amountCents: number } | null;
   };
-
-  // Resolve choice option ids to their labels for display
-  function resolveValue(section: (typeof sections)[number], field: string, value: unknown) {
-    if (section.kind === "choice" && field === "selected") {
-      const cfg = section.config as SectionConfigMap["choice"];
-      const toLabel = (v: unknown) => cfg.options.find((o) => o.id === v)?.label ?? String(v);
-      return Array.isArray(value) ? value.map(toLabel).join(", ") : toLabel(value);
-    }
-    return display(value);
-  }
 
   return (
     <div className="max-w-3xl">
@@ -115,31 +67,43 @@ export default async function RegistrationDetailPage({
       </div>
 
       <div className="mt-6 space-y-6">
-        {sections
-          .filter((s) => s.kind !== "text_block")
-          .map((section) => {
-            const sectionAnswers = answers[String(section.id)] ?? {};
-            return (
-              <div key={section.id} className="rounded-xl border border-zinc-200 bg-white p-5">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-                  {section.kind === "custom_question"
-                    ? (section.config as SectionConfigMap["custom_question"]).label
-                    : SECTION_LABELS[section.kind as SectionKind] ?? section.kind}
-                </h2>
-                <dl className="mt-3 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                  {Object.entries(sectionAnswers).map(([field, value]) => (
-                    <div key={field} className="flex justify-between gap-4 sm:block">
-                      <dt className="text-zinc-500">{FIELD_LABELS[field] ?? field}</dt>
-                      <dd className="font-medium">{resolveValue(section, field, value)}</dd>
-                    </div>
-                  ))}
-                  {Object.keys(sectionAnswers).length === 0 && (
-                    <p className="text-zinc-400">No answer</p>
-                  )}
-                </dl>
-              </div>
-            );
-          })}
+        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Registrant</h2>
+          <dl className="mt-3 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Full name</dt>
+              <dd className="font-medium">{registration.contactName}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Email</dt>
+              <dd className="font-medium">{registration.contactEmail}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Gender</dt>
+              <dd className="font-medium capitalize">{registration.gender ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Age</dt>
+              <dd className="font-medium">{registration.age ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:col-span-2 sm:block">
+              <dt className="text-zinc-500">Address</dt>
+              <dd className="font-medium">{registration.address ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Parent/guardian phone (emergency contact)</dt>
+              <dd className="font-medium">{registration.parentPhone ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Parent consent</dt>
+              <dd className="font-medium">{registration.parentConsent ? "Yes" : "No"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Media consent</dt>
+              <dd className="font-medium">{registration.mediaConsent ? "Yes" : "No"}</dd>
+            </div>
+          </dl>
+        </div>
 
         <div className="rounded-xl border border-zinc-200 bg-white p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Pricing</h2>

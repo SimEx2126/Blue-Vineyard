@@ -6,16 +6,7 @@ import { publicEventUrl, qrSvg } from "@/lib/qr";
 import { SharePanel } from "@/components/SharePanel";
 import { BannerField } from "@/components/BannerField";
 import { formatCents } from "@/lib/pricing";
-import { SECTION_KINDS, SECTION_LABELS, type SectionKind } from "@/lib/sections";
-import {
-  addSection,
-  addTier,
-  deleteEvent,
-  deleteSection,
-  deleteTier,
-  updateEvent,
-  updateSection,
-} from "../../../actions";
+import { addTier, deleteEvent, deleteTier, updateEvent } from "../../../actions";
 import { EventFields } from "../../EventFields";
 
 export const dynamic = "force-dynamic";
@@ -39,16 +30,10 @@ export default async function EditEventPage({
   const eventId = Number(id);
   const { event } = await assertCanEditEvent(eventId);
 
-  const [sections, tiers] = await Promise.all([
-    db.query.eventSections.findMany({
-      where: eq(schema.eventSections.eventId, eventId),
-      orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
-    }),
-    db.query.priceTiers.findMany({
-      where: eq(schema.priceTiers.eventId, eventId),
-      orderBy: (t, { asc }) => [asc(t.position), asc(t.id)],
-    }),
-  ]);
+  const tiers = await db.query.priceTiers.findMany({
+    where: eq(schema.priceTiers.eventId, eventId),
+    orderBy: (t, { asc }) => [asc(t.position), asc(t.id)],
+  });
 
   const shareUrl = publicEventUrl(event.slug);
   const qrMarkup = await qrSvg(shareUrl);
@@ -99,67 +84,8 @@ export default async function EditEventPage({
         </div>
       </form>
 
-      {/* Sections */}
-      <section>
-        <h2 className="text-lg font-semibold">Form sections</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          The registration form is assembled from these sections, in order.
-        </p>
-        <div className="mt-4 space-y-4">
-          {sections.map((s) => (
-            <div key={s.id} className="rounded-xl border border-zinc-200 bg-white p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">
-                  {SECTION_LABELS[s.kind as SectionKind] ?? s.kind}
-                  <span className="ml-2 font-normal text-zinc-400">#{s.id}</span>
-                </h3>
-                <form action={deleteSection.bind(null, eventId, s.id)}>
-                  <button className={dangerBtn}>Remove</button>
-                </form>
-              </div>
-              <form action={updateSection.bind(null, eventId, s.id)} className="mt-3">
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <label className="flex items-center gap-2">
-                    Position
-                    <input
-                      type="number"
-                      name="position"
-                      defaultValue={s.position}
-                      className="w-20 rounded-md border border-zinc-300 px-2 py-1 text-sm"
-                    />
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" name="required" defaultChecked={s.required} />
-                    Required
-                  </label>
-                </div>
-                <label className="mt-3 block text-xs font-medium text-zinc-500">
-                  Configuration (JSON)
-                  <textarea
-                    name="config"
-                    rows={4}
-                    defaultValue={JSON.stringify(s.config, null, 2)}
-                    className={input + " font-mono text-xs"}
-                  />
-                </label>
-                <button className={smallBtn + " mt-2"}>Save section</button>
-              </form>
-            </div>
-          ))}
-        </div>
-        <form action={addSection.bind(null, eventId)} className="mt-4 flex items-center gap-2">
-          <select name="kind" className="rounded-md border border-zinc-300 px-3 py-2 text-sm">
-            {SECTION_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {SECTION_LABELS[k]}
-              </option>
-            ))}
-          </select>
-          <button className={smallBtn}>Add section</button>
-        </form>
-      </section>
-
-      {/* Pricing */}
+      {/* Pricing — only when the event charges for registration. */}
+      {event.requiresPayment ? (
       <section>
         <h2 className="text-lg font-semibold">Registration options</h2>
         <p className="mt-1 text-sm text-zinc-500">
@@ -189,7 +115,12 @@ export default async function EditEventPage({
           <button className={smallBtn + " sm:col-span-3 sm:justify-self-start"}>Add option</button>
         </form>
       </section>
-
+      ) : (
+        <p className="rounded-xl border border-dashed border-zinc-300 p-5 text-sm text-zinc-500">
+          This event is <strong className="font-medium text-zinc-700">free</strong> — turn on
+          “Registration requires payment” above to set price options.
+        </p>
+      )}
 
       <section className="border-t border-zinc-200 pt-6">
         <form action={deleteEvent.bind(null, eventId)}>

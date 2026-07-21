@@ -45,22 +45,14 @@ export const events = pgTable("events", {
   closesAt: timestamp("closes_at", { withTimezone: true }),
   capacity: integer("capacity"),
   fullMessage: text("full_message"),
+  // Whether registering for this event costs money. When false the event is
+  // free: no registration options are offered and no payment leg is created.
+  requiresPayment: boolean("requires_payment").notNull().default(false),
   // How to pay — bank details etc. — shown to registrants after they register,
   // since payment happens outside the app (no card gateway).
   paymentInstructions: text("payment_instructions"),
   status: text("status").notNull().default("draft"), // draft | published | archived
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const eventSections = pgTable("event_sections", {
-  id: serial("id").primaryKey(),
-  eventId: integer("event_id")
-    .notNull()
-    .references(() => events.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull(), // see SectionKind in lib/sections.ts
-  position: integer("position").notNull().default(0),
-  required: boolean("required").notNull().default(false),
-  config: jsonb("config").notNull().default({}),
 });
 
 // Mutually-exclusive registration options (e.g. Adult / Child / Day pass),
@@ -88,7 +80,14 @@ export const registrations = pgTable("registrations", {
   status: text("status").notNull().default("pending"), // pending | confirmed | cancelled
   contactName: text("contact_name").notNull(),
   contactEmail: text("contact_email").notNull(),
-  answers: jsonb("answers").notNull().default({}), // keyed by section id
+  // The fixed registration form's fields.
+  gender: text("gender"), // male | female
+  age: integer("age"),
+  address: text("address"),
+  mediaConsent: boolean("media_consent").notNull().default(false),
+  // Parent/guardian phone doubles as the emergency contact number.
+  parentPhone: text("parent_phone"),
+  parentConsent: boolean("parent_consent").notNull().default(false),
   tierId: integer("tier_id").references(() => priceTiers.id),
   pricing: jsonb("pricing").notNull().default({}), // { tier, totalCents }
   amountCents: integer("amount_cents").notNull().default(0),

@@ -123,6 +123,20 @@ export function EventFields({ event }: { event?: EventRow }) {
           <option value="archived">Archived</option>
         </select>
       </label>
+      <div className="flex items-center sm:col-span-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+          <input
+            type="checkbox"
+            name="requiresPayment"
+            defaultChecked={event?.requiresPayment ?? false}
+          />
+          Registration requires payment
+        </label>
+        <span className="ml-3 text-xs text-zinc-500">
+          When on, you set the price options below and registrants are asked to pay. When off, the
+          event is free.
+        </span>
+      </div>
       <div className="sm:col-span-2">
         <label className={label}>
           Message shown when full

@@ -6,12 +6,6 @@ import { notFound, redirect } from "next/navigation";
 import { db, schema } from "@/db";
 import { assertCanEditEvent, canManageEvents, requireUser } from "@/lib/access";
 import { confirmRegistration } from "@/lib/confirm";
-import {
-  parseSectionConfig,
-  SECTION_KINDS,
-  SECTION_TEMPLATES,
-  type SectionKind,
-} from "@/lib/sections";
 
 function str(fd: FormData, key: string) {
   const v = fd.get(key);
@@ -93,6 +87,7 @@ function eventFieldsFrom(fd: FormData) {
     closesAt: date(fd, "closesAt"),
     capacity: num(fd, "capacity"),
     fullMessage: str(fd, "fullMessage"),
+    requiresPayment: fd.get("requiresPayment") === "on",
     paymentInstructions: str(fd, "paymentInstructions"),
     status: str(fd, "status") ?? "draft",
   };
@@ -135,56 +130,6 @@ export async function deleteEvent(eventId: number) {
   await db.delete(schema.events).where(eq(schema.events.id, eventId));
   revalidatePath("/admin/events");
   redirect("/admin/events");
-}
-
-// ---- Sections ----
-
-export async function addSection(eventId: number, fd: FormData) {
-  await assertCanEditEvent(eventId);
-  const kind = str(fd, "kind") as SectionKind | null;
-  if (!kind || !SECTION_KINDS.includes(kind)) return;
-  const existing = await db.query.eventSections.findMany({
-    where: eq(schema.eventSections.eventId, eventId),
-  });
-  await db.insert(schema.eventSections).values({
-    eventId,
-    kind,
-    position: existing.length,
-    required: false,
-    config: SECTION_TEMPLATES[kind] as Record<string, unknown>,
-  });
-  revalidatePath(`/admin/events/${eventId}/edit`);
-}
-
-export async function updateSection(eventId: number, sectionId: number, fd: FormData) {
-  await assertCanEditEvent(eventId);
-  const section = await db.query.eventSections.findFirst({
-    where: and(eq(schema.eventSections.id, sectionId), eq(schema.eventSections.eventId, eventId)),
-  });
-  if (!section) return;
-  let config: unknown;
-  try {
-    config = parseSectionConfig(section.kind as SectionKind, JSON.parse(str(fd, "config") ?? "{}"));
-  } catch {
-    redirect(`/admin/events/${eventId}/edit?error=Section+${sectionId}:+invalid+config+JSON`);
-  }
-  await db
-    .update(schema.eventSections)
-    .set({
-      required: fd.get("required") === "on",
-      position: num(fd, "position") ?? section.position,
-      config: config as Record<string, unknown>,
-    })
-    .where(eq(schema.eventSections.id, sectionId));
-  revalidatePath(`/admin/events/${eventId}/edit`);
-}
-
-export async function deleteSection(eventId: number, sectionId: number) {
-  await assertCanEditEvent(eventId);
-  await db
-    .delete(schema.eventSections)
-    .where(and(eq(schema.eventSections.id, sectionId), eq(schema.eventSections.eventId, eventId)));
-  revalidatePath(`/admin/events/${eventId}/edit`);
 }
 
 // ---- Pricing ----

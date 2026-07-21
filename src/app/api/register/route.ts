@@ -2,16 +2,25 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
-import { buildAnswersSchema, extractContact, type SectionConfigMap } from "@/lib/sections";
-import { choiceOptionCounts, getOpenState, toSectionDTOs } from "@/lib/registration";
+import { getOpenState } from "@/lib/registration";
 import { confirmRegistration } from "@/lib/confirm";
 import { sendRegistrationReceivedEmail } from "@/lib/registration-email";
 import { generateReference } from "@/lib/reference";
 
+// The registration form is one fixed basic form (no per-event form builder):
+// full name, email, gender, age, address, media consent, and the
+// parent/guardian phone + consent, which doubles as the emergency contact.
 const bodySchema = z.object({
   eventId: z.number().int(),
-  answers: z.record(z.string(), z.unknown()),
   tierId: z.number().int().nullable(),
+  fullName: z.string().trim().min(1),
+  email: z.string().trim().email(),
+  gender: z.enum(["male", "female"]),
+  age: z.number().int().min(1).max(120),
+  address: z.string().trim().min(1),
+  mediaConsent: z.boolean().default(false),
+  parentPhone: z.string().trim().min(1),
+  parentConsent: z.boolean().default(false),
 });
 
 export async function POST(req: Request) {
@@ -19,7 +28,10 @@ export async function POST(req: Request) {
   try {
     body = bodySchema.parse(await req.json());
   } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Please fill in every field (name, email, gender, age, address and parent/guardian phone)." },
+      { status: 400 }
+    );
   }
 
   const event = await db.query.events.findFirst({
@@ -33,68 +45,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: openState.message }, { status: 409 });
   }
 
-  const sections = toSectionDTOs(
-    await db.query.eventSections.findMany({
-      where: eq(schema.eventSections.eventId, event.id),
-      orderBy: (s, { asc }) => [asc(s.position), asc(s.id)],
-    })
-  );
-
-  const parsed = buildAnswersSchema(sections).safeParse(body.answers);
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return NextResponse.json(
-      { error: `Please check your answers (${first?.path.join(".")}: ${first?.message}).` },
-      { status: 400 }
-    );
-  }
-  const answers = parsed.data as Record<string, Record<string, unknown>>;
-
-  // Per-option capacity on choice sections
-  for (const section of sections) {
-    if (section.kind !== "choice") continue;
-    const cfg = section.config as SectionConfigMap["choice"];
-    const answer = answers[String(section.id)] as { selected?: string | string[] } | undefined;
-    if (!answer?.selected) continue;
-    const picks = Array.isArray(answer.selected) ? answer.selected : [answer.selected];
-    const counts = await choiceOptionCounts(event.id, section.id);
-    for (const pick of picks) {
-      const option = cfg.options.find((o) => o.id === pick);
-      if (option?.capacity != null && (counts[pick] ?? 0) >= option.capacity) {
-        return NextResponse.json(
-          { error: `"${option.label}" is full — please choose another option.` },
-          { status: 409 }
-        );
-      }
-    }
-  }
-
-  const contact = extractContact(sections, answers);
-  if (!contact) {
-    return NextResponse.json(
-      { error: "This event's form must collect your name and email." },
-      { status: 400 }
-    );
-  }
-
-  // Pricing (all recomputed server-side)
-  const tiers = await db.query.priceTiers.findMany({
-    where: eq(schema.priceTiers.eventId, event.id),
-  });
+  // Pricing (recomputed server-side). A free event has no payment leg at all,
+  // whatever tiers may linger from when it was paid.
   let totalCents = 0;
   let pricing: Record<string, unknown> = { tier: null, totalCents: 0 };
-  let tierRow: (typeof tiers)[number] | null = null;
+  let tierRow: typeof schema.priceTiers.$inferSelect | null = null;
 
-  if (tiers.length > 0) {
-    tierRow = tiers.find((t) => t.id === body.tierId) ?? null;
-    if (!tierRow) {
-      return NextResponse.json({ error: "Please select a registration option." }, { status: 400 });
+  if (event.requiresPayment) {
+    const tiers = await db.query.priceTiers.findMany({
+      where: eq(schema.priceTiers.eventId, event.id),
+    });
+    if (tiers.length > 0) {
+      tierRow = tiers.find((t) => t.id === body.tierId) ?? null;
+      if (!tierRow) {
+        return NextResponse.json({ error: "Please select a registration option." }, { status: 400 });
+      }
+      totalCents = tierRow.amountCents;
+      pricing = {
+        tier: { id: tierRow.id, label: tierRow.label, amountCents: tierRow.amountCents },
+        totalCents,
+      };
     }
-    totalCents = tierRow.amountCents;
-    pricing = {
-      tier: { id: tierRow.id, label: tierRow.label, amountCents: tierRow.amountCents },
-      totalCents,
-    };
   }
 
   const [registration] = await db
@@ -104,9 +75,14 @@ export async function POST(req: Request) {
       eventId: event.id,
       reference: generateReference(),
       status: "pending",
-      contactName: contact.name,
-      contactEmail: contact.email,
-      answers,
+      contactName: body.fullName,
+      contactEmail: body.email.toLowerCase(),
+      gender: body.gender,
+      age: body.age,
+      address: body.address,
+      mediaConsent: body.mediaConsent,
+      parentPhone: body.parentPhone,
+      parentConsent: body.parentConsent,
       tierId: tierRow?.id ?? null,
       pricing,
       amountCents: totalCents,
