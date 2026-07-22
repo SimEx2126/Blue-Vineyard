@@ -3,8 +3,8 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
-import { db, schema } from "@/db";
-import { assertCanEditEvent, canManageEvents, requireUser } from "@/lib/access";
+import { db, schema, authSchema } from "@/db";
+import { assertCanEditEvent, canManageEvents, isAdmin, requireUser } from "@/lib/access";
 import { confirmRegistration } from "@/lib/confirm";
 
 function str(fd: FormData, key: string) {
@@ -110,6 +110,32 @@ export async function createEvent(fd: FormData) {
     .returning();
   revalidatePath("/admin/events");
   redirect(`/admin/events/${event.id}/edit`);
+}
+
+/**
+ * Assign the event's admin — the person who runs this event. Org admins only,
+ * and the assignee must be an active organiser or admin of the same
+ * organization.
+ */
+export async function setEventAdmin(eventId: number, fd: FormData) {
+  const { event, user } = await assertCanEditEvent(eventId);
+  if (!isAdmin(user)) notFound();
+
+  const targetId = str(fd, "ownerId");
+  if (!targetId) return;
+  const target = await db.query.user.findFirst({ where: eq(authSchema.user.id, targetId) });
+  if (
+    !target ||
+    target.orgId !== event.orgId ||
+    target.active === false ||
+    !["admin", "organiser"].includes(target.role ?? "")
+  ) {
+    redirect(`/admin/events/${eventId}/edit?error=That+person+cannot+run+events`);
+  }
+
+  await db.update(schema.events).set({ ownerId: target.id }).where(eq(schema.events.id, eventId));
+  revalidatePath(`/admin/events/${eventId}/edit`);
+  redirect(`/admin/events/${eventId}/edit?saved=1`);
 }
 
 export async function updateEvent(eventId: number, fd: FormData) {

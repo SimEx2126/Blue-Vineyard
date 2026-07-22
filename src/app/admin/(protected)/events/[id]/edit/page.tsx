@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
-import { db, schema } from "@/db";
-import { assertCanEditEvent } from "@/lib/access";
+import { and, eq, inArray } from "drizzle-orm";
+import { db, schema, authSchema } from "@/db";
+import { assertCanEditEvent, isAdmin } from "@/lib/access";
 import { publicEventUrl, qrSvg } from "@/lib/qr";
 import { SharePanel } from "@/components/SharePanel";
 import { BannerField } from "@/components/BannerField";
 import { formatCents } from "@/lib/pricing";
-import { addTier, deleteEvent, deleteTier, updateEvent } from "../../../actions";
+import { addTier, deleteEvent, deleteTier, setEventAdmin, updateEvent } from "../../../actions";
 import { EventFields } from "../../EventFields";
 
 export const dynamic = "force-dynamic";
@@ -28,12 +28,27 @@ export default async function EditEventPage({
   const { id } = await params;
   const { error, saved } = await searchParams;
   const eventId = Number(id);
-  const { event } = await assertCanEditEvent(eventId);
+  const { event, user } = await assertCanEditEvent(eventId);
 
   const tiers = await db.query.priceTiers.findMany({
     where: eq(schema.priceTiers.eventId, eventId),
     orderBy: (t, { asc }) => [asc(t.position), asc(t.id)],
   });
+
+  // Who runs this event, and (for org admins) who it could be handed to.
+  const owner = event.ownerId
+    ? await db.query.user.findFirst({ where: eq(authSchema.user.id, event.ownerId) })
+    : null;
+  const assignable = isAdmin(user)
+    ? await db.query.user.findMany({
+        where: and(
+          eq(authSchema.user.orgId, event.orgId),
+          eq(authSchema.user.active, true),
+          inArray(authSchema.user.role, ["admin", "organiser"])
+        ),
+        orderBy: (u, { asc }) => [asc(u.name)],
+      })
+    : [];
 
   const shareUrl = publicEventUrl(event.slug);
   const qrMarkup = await qrSvg(shareUrl);
@@ -64,6 +79,47 @@ export default async function EditEventPage({
           its direct link and QR code. Draft events are not visible to registrants.
         </div>
       )}
+
+      {/* Who runs this event. Org admins assign it; the assignee manages the
+          event and its registrations. */}
+      <section className="rounded-xl border border-zinc-200 bg-white p-5">
+        <h2 className="text-lg font-semibold">Event admin</h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          {owner ? (
+            <>
+              Run by <strong className="font-medium text-zinc-700">{owner.name}</strong>{" "}
+              <span className="text-zinc-400">({owner.email})</span>
+            </>
+          ) : (
+            "No one is assigned to this event yet."
+          )}
+        </p>
+        {isAdmin(user) && (
+          <form action={setEventAdmin.bind(null, eventId)} className="mt-3 flex flex-wrap gap-2">
+            <select
+              name="ownerId"
+              defaultValue={event.ownerId ?? ""}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            >
+              <option value="" disabled>
+                Choose a person…
+              </option>
+              {assignable.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — {p.role}
+                </option>
+              ))}
+            </select>
+            <button className={smallBtn}>Assign</button>
+            <a
+              href="/admin/users?role=admin#add-person"
+              className="self-center text-sm text-teal-700 hover:underline"
+            >
+              Add someone new
+            </a>
+          </form>
+        )}
+      </section>
 
       {/* Details on the left, banner alongside on the right. */}
       <form

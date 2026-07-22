@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { inArray, sql } from "drizzle-orm";
-import { db, schema } from "@/db";
+import { db, schema, authSchema } from "@/db";
 import {
   canManageEvents,
   canViewAllEvents,
   eventListWhere,
-  isAdmin,
   requireUser,
 } from "@/lib/access";
 import { publicEventUrl, qrSvg } from "@/lib/qr";
@@ -34,6 +33,13 @@ export default async function AdminEventsPage() {
     : [];
   const countByEvent = new Map(counts.map((c) => [c.eventId, c.count]));
 
+  // The assigned admin's name, shown on each card.
+  const ownerIds = [...new Set(events.map((e) => e.ownerId).filter((v): v is string => !!v))];
+  const owners = ownerIds.length
+    ? await db.query.user.findMany({ where: inArray(authSchema.user.id, ownerIds) })
+    : [];
+  const ownerById = new Map(owners.map((o) => [o.id, o.name]));
+
   // Each row carries the event's QR + link, ready to share from the list.
   const qrByEvent = new Map(
     await Promise.all(
@@ -47,25 +53,14 @@ export default async function AdminEventsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{canViewAllEvents(user) ? "All events" : "Your events"}</h1>
-        <div className="flex items-center gap-3">
-          {/* Shortcut to the People form with the role preset to admin. */}
-          {isAdmin(user) && (
-            <a
-              href="/admin/users?role=admin#add-person"
-              className="rounded-lg border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
-            >
-              Add admin
-            </a>
-          )}
-          {canManage && (
-            <Link
-              href="/admin/events/new"
-              className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
-            >
-              New event
-            </Link>
-          )}
-        </div>
+        {canManage && (
+          <Link
+            href="/admin/events/new"
+            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+          >
+            New event
+          </Link>
+        )}
       </div>
       {/* Cards on phones; the table below is too wide to fit and was clipping
           its action links. */}
@@ -179,6 +174,11 @@ export default async function AdminEventsPage() {
                   year: "numeric",
                 }) ?? "Date TBC"}
               </span>
+              {event.ownerId && ownerById.get(event.ownerId) && (
+                <span className="text-sm text-zinc-500">
+                  Admin: <span className="text-zinc-700">{ownerById.get(event.ownerId)}</span>
+                </span>
+              )}
             </div>
 
             <div className="flex shrink-0 items-center gap-3 border-l border-zinc-200 pl-5">
