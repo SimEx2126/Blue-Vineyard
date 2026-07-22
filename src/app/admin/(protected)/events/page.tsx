@@ -155,10 +155,12 @@ export default async function AdminEventsPage() {
                         {event.title}
                       </Link>
                       {event.description && (
-                        // One line then ellipsis: enough to tell events apart
-                        // without the row growing with the copy.
-                        <p className="mt-0.5 line-clamp-1 max-w-md text-xs font-normal text-zinc-500">
-                          {event.description}
+                        // A shortened preview: the text itself is cut to ~100
+                        // characters, and the two-line clamp is the backstop.
+                        <p className="mt-0.5 line-clamp-2 max-w-md text-xs font-normal text-zinc-500">
+                          {event.description.length > 100
+                            ? `${event.description.slice(0, 100).trimEnd()}…`
+                            : event.description}
                         </p>
                       )}
                     </div>
