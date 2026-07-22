@@ -116,89 +116,95 @@ export default async function AdminEventsPage() {
         ))}
       </div>
 
-      <div className="mt-6 hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white sm:block">
-        <table className="w-full text-base">
-          <tbody className="divide-y divide-zinc-100">
-            {events.map((event) => (
-              <tr key={event.id}>
-                <td className="px-5 py-4 font-medium">
-                  <div className="flex items-center gap-3">
-                    {/* Contain rather than crop, so a portrait poster is still
-                        recognisable at thumbnail size. */}
-                    {event.heroImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={event.heroImageUrl}
-                        alt=""
-                        className="h-24 w-20 shrink-0 rounded-lg border border-zinc-200 bg-zinc-50 object-contain"
-                      />
-                    ) : (
-                      <div
-                        className="flex h-24 w-20 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-[9px] uppercase tracking-wide text-zinc-400"
-                        title="No banner set"
-                      >
-                        No
-                        <br />
-                        image
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <Link
-                        href={`/admin/events/${event.id}/registrations`}
-                        className="text-lg font-semibold hover:underline"
-                      >
-                        {event.title}
-                      </Link>
-                      {event.description && (
-                        // A shortened preview: the text itself is cut to ~100
-                        // characters, and the two-line clamp is the backstop.
-                        <p className="mt-1 line-clamp-2 max-w-md text-sm font-normal text-zinc-500">
-                          {event.description.length > 100
-                            ? `${event.description.slice(0, 100).trimEnd()}…`
-                            : event.description}
-                        </p>
-                      )}
-                      <Link
-                        href={`/admin/events/${event.id}/registrations`}
-                        className="mt-4 inline-block text-sm font-semibold text-teal-700 hover:underline"
-                      >
-                        {countByEvent.get(event.id) ?? 0} registered
-                      </Link>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-zinc-500">{event.category ?? "—"}</td>
-                <td className="px-5 py-4">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-sm font-medium ${
-                      event.status === "published"
-                        ? "bg-teal-100 text-teal-800"
-                        : event.status === "draft"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-zinc-100 text-zinc-600"
-                    }`}
-                  >
-                    {event.status}
-                  </span>
-                </td>
-                <td className="px-5 py-4 text-zinc-500">
-                  {event.startsAt?.toLocaleDateString("en-AU") ?? "—"}
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center justify-end gap-3">
-                    <ShareQrButton
-                      url={publicEventUrl(event.slug)}
-                      qrMarkup={qrByEvent.get(event.id) ?? ""}
-                    />
-                    <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
-                      View
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* One card per event: banner + details on the left, a stacked meta
+          column (status, category, date) in the middle-right, and the actions
+          grouped past a divider. */}
+      <div className="mt-6 hidden space-y-4 sm:block">
+        {events.map((event) => (
+          <div
+            key={event.id}
+            className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white p-5"
+          >
+            {/* Contain rather than crop, so a portrait poster is still
+                recognisable at thumbnail size. */}
+            {event.heroImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={event.heroImageUrl}
+                alt=""
+                className="h-24 w-20 shrink-0 rounded-lg border border-zinc-200 bg-zinc-50 object-contain"
+              />
+            ) : (
+              <div
+                className="flex h-24 w-20 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-[9px] uppercase tracking-wide text-zinc-400"
+                title="No banner set"
+              >
+                No
+                <br />
+                image
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <Link
+                href={`/admin/events/${event.id}/registrations`}
+                className="text-lg font-semibold hover:underline"
+              >
+                {event.title}
+              </Link>
+              {event.description && (
+                // A shortened preview: the text itself is cut to ~100
+                // characters, and the two-line clamp is the backstop.
+                <p className="mt-1 line-clamp-2 max-w-md text-sm text-zinc-500">
+                  {event.description.length > 100
+                    ? `${event.description.slice(0, 100).trimEnd()}…`
+                    : event.description}
+                </p>
+              )}
+              <Link
+                href={`/admin/events/${event.id}/registrations`}
+                className="mt-2 inline-block text-sm font-semibold text-teal-700 hover:underline"
+              >
+                {countByEvent.get(event.id) ?? 0} registered
+              </Link>
+            </div>
+
+            <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${
+                  event.status === "published"
+                    ? "bg-teal-100 text-teal-800"
+                    : event.status === "draft"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-zinc-100 text-zinc-600"
+                }`}
+              >
+                {event.status}
+              </span>
+              {event.category && <span className="text-sm text-zinc-500">{event.category}</span>}
+              <span className="text-sm text-zinc-500">
+                {event.startsAt?.toLocaleDateString("en-AU", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }) ?? "Date TBC"}
+              </span>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-3 border-l border-zinc-200 pl-5">
+              <ShareQrButton
+                url={publicEventUrl(event.slug)}
+                qrMarkup={qrByEvent.get(event.id) ?? ""}
+              />
+              <Link
+                href={`/e/${event.slug}`}
+                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              >
+                View
+              </Link>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
