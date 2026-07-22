@@ -82,17 +82,6 @@ export default async function AdminEventsPage() {
                   {event.category ?? "—"}
                   {event.startsAt ? ` · ${event.startsAt.toLocaleDateString("en-AU")}` : ""}
                 </p>
-                <span
-                  className={`mt-2 inline-block rounded-full px-2.5 py-1 text-sm font-medium ${
-                    event.status === "published"
-                      ? "bg-teal-100 text-teal-800"
-                      : event.status === "draft"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-zinc-100 text-zinc-600"
-                  }`}
-                >
-                  {event.status}
-                </span>
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-zinc-100 pt-3 text-sm">
@@ -170,17 +159,6 @@ export default async function AdminEventsPage() {
             </div>
 
             <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${
-                  event.status === "published"
-                    ? "bg-teal-100 text-teal-800"
-                    : event.status === "draft"
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-zinc-100 text-zinc-600"
-                }`}
-              >
-                {event.status}
-              </span>
               {event.category && <span className="text-sm text-zinc-500">{event.category}</span>}
               <span className="text-sm text-zinc-500">
                 {event.startsAt?.toLocaleDateString("en-AU", {
