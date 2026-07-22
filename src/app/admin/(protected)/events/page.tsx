@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { db } from "@/db";
+import { inArray, sql } from "drizzle-orm";
+import { db, schema } from "@/db";
 import {
   canManageEvents,
   canViewAllEvents,
@@ -16,6 +17,20 @@ export default async function AdminEventsPage() {
     where: eventListWhere(user),
     orderBy: (e, { desc }) => [desc(e.createdAt)],
   });
+
+  // Who has registered, per event — the count links through to the list of
+  // registrants and their details.
+  const counts = events.length
+    ? await db
+        .select({
+          eventId: schema.registrations.eventId,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(schema.registrations)
+        .where(inArray(schema.registrations.eventId, events.map((e) => e.id)))
+        .groupBy(schema.registrations.eventId)
+    : [];
+  const countByEvent = new Map(counts.map((c) => [c.eventId, c.count]));
 
   const canManage = canManageEvents(user);
   const canEditEvent = (e: (typeof events)[number]) => isAdmin(user) || e.ownerId === user.id;
@@ -50,7 +65,12 @@ export default async function AdminEventsPage() {
                 <div className="h-16 w-12 shrink-0 rounded border border-dashed border-zinc-300" />
               )}
               <div className="min-w-0">
-                <p className="font-medium">{event.title}</p>
+                <Link
+                  href={`/admin/events/${event.id}/registrations`}
+                  className="font-medium hover:underline"
+                >
+                  {event.title}
+                </Link>
                 <p className="mt-0.5 text-xs text-zinc-500">
                   {event.category ?? "—"}
                   {event.startsAt ? ` · ${event.startsAt.toLocaleDateString("en-AU")}` : ""}
@@ -76,7 +96,7 @@ export default async function AdminEventsPage() {
                 href={`/admin/events/${event.id}/registrations`}
                 className="text-zinc-500 hover:underline"
               >
-                Registrations
+                Registered: {countByEvent.get(event.id) ?? 0}
               </Link>
               {canEditEvent(event) && (
                 <Link
@@ -99,6 +119,7 @@ export default async function AdminEventsPage() {
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Starts</th>
+              <th className="px-4 py-3 text-right">Registered</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -127,7 +148,12 @@ export default async function AdminEventsPage() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <span>{event.title}</span>
+                      <Link
+                        href={`/admin/events/${event.id}/registrations`}
+                        className="hover:underline"
+                      >
+                        {event.title}
+                      </Link>
                       {event.description && (
                         // Two lines then ellipsis: enough to tell events apart
                         // without the row growing with the copy.
@@ -154,6 +180,14 @@ export default async function AdminEventsPage() {
                 </td>
                 <td className="px-4 py-3 text-zinc-500">
                   {event.startsAt?.toLocaleDateString("en-AU") ?? "—"}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <Link
+                    href={`/admin/events/${event.id}/registrations`}
+                    className="font-medium text-teal-700 hover:underline"
+                  >
+                    {countByEvent.get(event.id) ?? 0}
+                  </Link>
                 </td>
                 <td className="space-x-3 px-4 py-3 text-right">
                   <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
