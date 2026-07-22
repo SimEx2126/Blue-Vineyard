@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { APIError } from "better-auth/api";
 import { db, authSchema } from "@/db";
 import { auth } from "@/lib/auth";
+import { Brand } from "@/components/Brand";
 
 async function login(formData: FormData) {
   "use server";
@@ -48,6 +49,10 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto max-w-sm">
+      {/* Admin routes hide the public header, so the brand anchors this page. */}
+      <div className="mb-6 flex justify-center">
+        <Brand href="/" />
+      </div>
       <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-xl font-semibold">Admin sign in</h1>
         <p className="mt-1 text-sm text-zinc-500">
