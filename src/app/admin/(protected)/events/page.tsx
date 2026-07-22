@@ -103,15 +103,6 @@ export default async function AdminEventsPage() {
 
       <div className="mt-6 hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white sm:block">
         <table className="w-full text-base">
-          <thead className="bg-zinc-50 text-left text-sm uppercase tracking-wide text-zinc-500">
-            <tr>
-              <th className="px-5 py-4">Title</th>
-              <th className="px-5 py-4">Category</th>
-              <th className="px-5 py-4">Status</th>
-              <th className="px-5 py-4">Starts</th>
-              <th className="px-5 py-4"></th>
-            </tr>
-          </thead>
           <tbody className="divide-y divide-zinc-100">
             {events.map((event) => (
               <tr key={event.id}>
