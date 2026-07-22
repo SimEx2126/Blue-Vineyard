@@ -155,9 +155,9 @@ export default async function AdminEventsPage() {
                         {event.title}
                       </Link>
                       {event.description && (
-                        // Two lines then ellipsis: enough to tell events apart
+                        // One line then ellipsis: enough to tell events apart
                         // without the row growing with the copy.
-                        <p className="mt-0.5 line-clamp-2 max-w-md text-xs font-normal text-zinc-500">
+                        <p className="mt-0.5 line-clamp-1 max-w-md text-xs font-normal text-zinc-500">
                           {event.description}
                         </p>
                       )}
