@@ -119,7 +119,6 @@ export default async function AdminEventsPage() {
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Starts</th>
-              <th className="px-4 py-3 text-right">Registered</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -163,6 +162,12 @@ export default async function AdminEventsPage() {
                             : event.description}
                         </p>
                       )}
+                      <Link
+                        href={`/admin/events/${event.id}/registrations`}
+                        className="mt-1 inline-block text-xs font-semibold text-teal-700 hover:underline"
+                      >
+                        {countByEvent.get(event.id) ?? 0} registered
+                      </Link>
                     </div>
                   </div>
                 </td>
@@ -182,14 +187,6 @@ export default async function AdminEventsPage() {
                 </td>
                 <td className="px-4 py-3 text-zinc-500">
                   {event.startsAt?.toLocaleDateString("en-AU") ?? "—"}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/events/${event.id}/registrations`}
-                    className="font-medium text-teal-700 hover:underline"
-                  >
-                    {countByEvent.get(event.id) ?? 0}
-                  </Link>
                 </td>
                 <td className="space-x-3 px-4 py-3 text-right">
                   <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
