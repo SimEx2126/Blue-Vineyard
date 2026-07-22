@@ -22,7 +22,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             isSuperAdmin(user)
               ? [{ href: "/admin/organizations", label: "Organizations" }]
               : [
-                  { href: "/admin", label: "Dashboard" },
                   { href: "/admin/events", label: "Events" },
                   // Viewers watch submissions only — no payments ledger.
                   ...(isViewer(user) ? [] : [{ href: "/admin/payments", label: "Payments" }]),
