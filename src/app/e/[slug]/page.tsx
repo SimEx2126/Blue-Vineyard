@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { countActiveRegistrations, getOpenState, getPublicEvent } from "@/lib/registration";
 import { getCurrentUser, isAdmin, isSuperAdmin } from "@/lib/access";
+import { publicEventUrl, qrSvg } from "@/lib/qr";
 import { RegistrationForm } from "@/components/RegistrationForm";
+import { ShareQrButton } from "@/components/ShareQrButton";
 
 export const dynamic = "force-dynamic";
 
@@ -34,18 +36,23 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     (isSuperAdmin(viewer) ||
       (viewer.orgId === event.orgId && (isAdmin(viewer) || event.ownerId === viewer.id)));
 
+  // Anyone may share: the QR button carries the event's code and direct link.
+  const shareUrl = publicEventUrl(event.slug);
+  const qrMarkup = await qrSvg(shareUrl);
+
   return (
     <article>
-      {canEdit && (
-        <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-end gap-3">
+        <ShareQrButton url={shareUrl} qrMarkup={qrMarkup} />
+        {canEdit && (
           <Link
             href={`/admin/events/${event.id}/edit`}
             className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
           >
             Edit event
           </Link>
-        </div>
-      )}
+        )}
+      </div>
       {/* Top: large banner on the left, event details beside it. The
           registration form sits below, across the full width. */}
       <div
