@@ -21,7 +21,7 @@ const smallBtn =
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string; sent?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; sent?: string; role?: string }>;
 }) {
   const admin = await requireAdmin();
   // The platform owner manages accounts organization-by-organization from the
@@ -29,7 +29,7 @@ export default async function UsersPage({
   if (isSuperAdmin(admin)) redirect("/admin/organizations");
   if (admin.orgId == null) notFound();
   const orgId = admin.orgId;
-  const { error, created, sent } = await searchParams;
+  const { error, created, sent, role: presetRole } = await searchParams;
 
   // Both queries are scoped to the admin's own organization — the people list
   // and the per-owner event counts must never include another organization.
@@ -68,12 +68,21 @@ export default async function UsersPage({
 
   return (
     <div className="max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">People</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Organisers manage only the events they create. Administrators see every event and manage
-          this list.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">People</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Organisers manage only the events they create. Administrators see every event and
+            manage this list.
+          </p>
+        </div>
+        {/* Jumps to the add form with the role preset to Administrator. */}
+        <a
+          href="?role=admin#add-person"
+          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+        >
+          Add admin
+        </a>
       </div>
 
       {error && (
@@ -194,7 +203,7 @@ export default async function UsersPage({
         </table>
       </div>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-6">
+      <section id="add-person" className="rounded-xl border border-zinc-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Add someone</h2>
         <p className="mt-1 text-sm text-zinc-500">
           They&apos;ll get an email with a link to set their own password — you don&apos;t need to
@@ -217,7 +226,11 @@ export default async function UsersPage({
           </label>
           <label className={label}>
             Role
-            <select name="role" defaultValue="organiser" className={input}>
+            <select
+              name="role"
+              defaultValue={presetRole === "admin" ? "admin" : "organiser"}
+              className={input}
+            >
               <option value="organiser">Organiser — their own events only</option>
               <option value="viewer">Viewer — read-only, watches all submissions</option>
               <option value="admin">Administrator — every event, and this list</option>
