@@ -21,19 +21,22 @@ const inputCls =
 const labelCls = "block text-sm font-medium text-zinc-700";
 
 /**
- * The one registration form, same for every event: full name, email, gender,
- * age, address, media consent, and parent/guardian phone + consent (which
- * doubles as the emergency contact).
+ * The one registration form, same for every event: first/last name, email,
+ * age, gender, address, media consent, parent consent, and the parent's full
+ * name + number — who is automatically the emergency contact.
  */
 export function RegistrationForm({ eventId, tiers }: Props) {
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [gender, setGender] = useState("");
+  const [phone, setPhone] = useState("");
   const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
   const [address, setAddress] = useState("");
   const [mediaConsent, setMediaConsent] = useState(false);
-  const [parentPhone, setParentPhone] = useState("");
   const [parentConsent, setParentConsent] = useState(false);
+  const [parentName, setParentName] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
   const [tierId, setTierId] = useState<number | null>(
     tiers.length === 1 ? tiers[0].id : null
   );
@@ -53,14 +56,17 @@ export function RegistrationForm({ eventId, tiers }: Props) {
         body: JSON.stringify({
           eventId,
           tierId,
-          fullName,
+          firstName,
+          lastName,
           email,
-          gender,
+          phone,
           age: Number(age),
+          gender,
           address,
           mediaConsent,
-          parentPhone,
           parentConsent,
+          parentName,
+          parentPhone,
         }),
       });
       const data = await res.json();
@@ -80,11 +86,20 @@ export function RegistrationForm({ eventId, tiers }: Props) {
     <form onSubmit={onSubmit} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={labelCls}>
-          Full name
+          First name
           <input
             required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className={inputCls}
+          />
+        </label>
+        <label className={labelCls}>
+          Last name
+          <input
+            required
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             className={inputCls}
           />
         </label>
@@ -99,19 +114,15 @@ export function RegistrationForm({ eventId, tiers }: Props) {
           />
         </label>
         <label className={labelCls}>
-          Gender
-          <select
+          Phone number
+          <input
+            type="tel"
             required
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             className={inputCls}
-          >
-            <option value="" disabled>
-              Select…
-            </option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
+            placeholder="e.g. 0400 000 000"
+          />
         </label>
         <label className={labelCls}>
           Age
@@ -125,6 +136,33 @@ export function RegistrationForm({ eventId, tiers }: Props) {
             className={inputCls}
           />
         </label>
+        <div className={labelCls}>
+          Gender
+          <div className="mt-2 flex gap-6">
+            <label className="flex items-center gap-2 font-normal">
+              <input
+                type="radio"
+                name="gender"
+                value="male"
+                required
+                checked={gender === "male"}
+                onChange={(e) => setGender(e.target.value)}
+              />
+              Male
+            </label>
+            <label className="flex items-center gap-2 font-normal">
+              <input
+                type="radio"
+                name="gender"
+                value="female"
+                required
+                checked={gender === "female"}
+                onChange={(e) => setGender(e.target.value)}
+              />
+              Female
+            </label>
+          </div>
+        </div>
         <label className={labelCls + " sm:col-span-2"}>
           Address
           <input
@@ -135,24 +173,36 @@ export function RegistrationForm({ eventId, tiers }: Props) {
             placeholder="Street, suburb, state and postcode"
           />
         </label>
-        <label className={labelCls + " sm:col-span-2"}>
-          Parent/guardian phone number
-          <input
-            type="tel"
-            required
-            value={parentPhone}
-            onChange={(e) => setParentPhone(e.target.value)}
-            className={inputCls}
-            placeholder="e.g. 0400 000 000"
-          />
-          <span className="mt-1 block text-xs font-normal text-zinc-500">
-            This number is also used as your emergency contact.
-          </span>
-        </label>
       </div>
 
-      <div className="space-y-3">
-        <label className="flex items-start gap-2 text-sm text-zinc-700">
+      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        <h3 className="text-sm font-semibold text-zinc-900">Parent / guardian</h3>
+        <p className="mt-0.5 text-xs text-zinc-500">
+          Automatically your emergency contact for this event.
+        </p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <label className={labelCls}>
+            Parent/guardian full name
+            <input
+              required
+              value={parentName}
+              onChange={(e) => setParentName(e.target.value)}
+              className={inputCls}
+            />
+          </label>
+          <label className={labelCls}>
+            Parent/guardian phone number
+            <input
+              type="tel"
+              required
+              value={parentPhone}
+              onChange={(e) => setParentPhone(e.target.value)}
+              className={inputCls}
+              placeholder="e.g. 0400 000 000"
+            />
+          </label>
+        </div>
+        <label className="mt-3 flex items-start gap-2 text-sm text-zinc-700">
           <input
             type="checkbox"
             className="mt-0.5"
@@ -161,18 +211,19 @@ export function RegistrationForm({ eventId, tiers }: Props) {
           />
           <span>I have my parent&rsquo;s/guardian&rsquo;s consent to attend this event.</span>
         </label>
-        <label className="flex items-start gap-2 text-sm text-zinc-700">
-          <input
-            type="checkbox"
-            className="mt-0.5"
-            checked={mediaConsent}
-            onChange={(e) => setMediaConsent(e.target.checked)}
-          />
-          <span>
-            I give consent for photos and videos taken at the event to be used by the organizers.
-          </span>
-        </label>
       </div>
+
+      <label className="flex items-start gap-2 text-sm text-zinc-700">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={mediaConsent}
+          onChange={(e) => setMediaConsent(e.target.checked)}
+        />
+        <span>
+          I give consent for photos and videos taken at the event to be used by the organizers.
+        </span>
+      </label>
 
       {tiers.length > 0 && (
         <div>

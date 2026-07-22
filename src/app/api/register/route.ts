@@ -8,19 +8,23 @@ import { sendRegistrationReceivedEmail } from "@/lib/registration-email";
 import { generateReference } from "@/lib/reference";
 
 // The registration form is one fixed basic form (no per-event form builder):
-// full name, email, gender, age, address, media consent, and the
-// parent/guardian phone + consent, which doubles as the emergency contact.
+// first/last name, email, age, gender, address, media consent, parent consent,
+// and the parent/guardian's full name + number — who is automatically the
+// emergency contact.
 const bodySchema = z.object({
   eventId: z.number().int(),
   tierId: z.number().int().nullable(),
-  fullName: z.string().trim().min(1),
+  firstName: z.string().trim().min(1),
+  lastName: z.string().trim().min(1),
   email: z.string().trim().email(),
-  gender: z.enum(["male", "female"]),
+  phone: z.string().trim().min(1),
   age: z.number().int().min(1).max(120),
+  gender: z.enum(["male", "female"]),
   address: z.string().trim().min(1),
   mediaConsent: z.boolean().default(false),
-  parentPhone: z.string().trim().min(1),
   parentConsent: z.boolean().default(false),
+  parentName: z.string().trim().min(1),
+  parentPhone: z.string().trim().min(1),
 });
 
 export async function POST(req: Request) {
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
     body = bodySchema.parse(await req.json());
   } catch {
     return NextResponse.json(
-      { error: "Please fill in every field (name, email, gender, age, address and parent/guardian phone)." },
+      { error: "Please fill in every field (name, email, age, gender, address and the parent/guardian's name and number)." },
       { status: 400 }
     );
   }
@@ -75,12 +79,14 @@ export async function POST(req: Request) {
       eventId: event.id,
       reference: generateReference(),
       status: "pending",
-      contactName: body.fullName,
+      contactName: [body.firstName, body.lastName].join(" "),
       contactEmail: body.email.toLowerCase(),
+      phone: body.phone,
       gender: body.gender,
       age: body.age,
       address: body.address,
       mediaConsent: body.mediaConsent,
+      parentName: body.parentName,
       parentPhone: body.parentPhone,
       parentConsent: body.parentConsent,
       tierId: tierRow?.id ?? null,

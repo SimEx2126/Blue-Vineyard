@@ -79,6 +79,10 @@ export default async function RegistrationDetailPage({
               <dd className="font-medium">{registration.contactEmail}</dd>
             </div>
             <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Phone</dt>
+              <dd className="font-medium">{registration.phone ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
               <dt className="text-zinc-500">Gender</dt>
               <dd className="font-medium capitalize">{registration.gender ?? "—"}</dd>
             </div>
@@ -91,7 +95,11 @@ export default async function RegistrationDetailPage({
               <dd className="font-medium">{registration.address ?? "—"}</dd>
             </div>
             <div className="flex justify-between gap-4 sm:block">
-              <dt className="text-zinc-500">Parent/guardian phone (emergency contact)</dt>
+              <dt className="text-zinc-500">Parent/guardian (emergency contact)</dt>
+              <dd className="font-medium">{registration.parentName ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:block">
+              <dt className="text-zinc-500">Parent/guardian phone</dt>
               <dd className="font-medium">{registration.parentPhone ?? "—"}</dd>
             </div>
             <div className="flex justify-between gap-4 sm:block">

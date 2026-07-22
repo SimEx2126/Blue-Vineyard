@@ -81,11 +81,13 @@ export const registrations = pgTable("registrations", {
   contactName: text("contact_name").notNull(),
   contactEmail: text("contact_email").notNull(),
   // The fixed registration form's fields.
+  phone: text("phone"),
   gender: text("gender"), // male | female
   age: integer("age"),
   address: text("address"),
   mediaConsent: boolean("media_consent").notNull().default(false),
-  // Parent/guardian phone doubles as the emergency contact number.
+  // The parent/guardian is automatically the emergency contact.
+  parentName: text("parent_name"),
   parentPhone: text("parent_phone"),
   parentConsent: boolean("parent_consent").notNull().default(false),
   tierId: integer("tier_id").references(() => priceTiers.id),
