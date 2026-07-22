@@ -154,7 +154,7 @@ export default async function AdminEventsPage() {
                       )}
                       <Link
                         href={`/admin/events/${event.id}/registrations`}
-                        className="mt-1.5 inline-block text-sm font-semibold text-teal-700 hover:underline"
+                        className="mt-4 inline-block text-sm font-semibold text-teal-700 hover:underline"
                       >
                         {countByEvent.get(event.id) ?? 0} registered
                       </Link>
@@ -181,12 +181,6 @@ export default async function AdminEventsPage() {
                 <td className="space-x-3 px-5 py-4 text-right">
                   <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
                     View
-                  </Link>
-                  <Link
-                    href={`/admin/events/${event.id}/registrations`}
-                    className="text-zinc-500 hover:underline"
-                  >
-                    Registrations
                   </Link>
                 </td>
               </tr>
