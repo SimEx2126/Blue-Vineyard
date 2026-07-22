@@ -74,7 +74,7 @@ export default async function AdminEventsPage() {
                   {event.startsAt ? ` · ${event.startsAt.toLocaleDateString("en-AU")}` : ""}
                 </p>
                 <span
-                  className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                  className={`mt-2 inline-block rounded-full px-2.5 py-1 text-sm font-medium ${
                     event.status === "published"
                       ? "bg-teal-100 text-teal-800"
                       : event.status === "draft"
@@ -102,20 +102,20 @@ export default async function AdminEventsPage() {
       </div>
 
       <div className="mt-6 hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white sm:block">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
+        <table className="w-full text-base">
+          <thead className="bg-zinc-50 text-left text-sm uppercase tracking-wide text-zinc-500">
             <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Starts</th>
-              <th className="px-4 py-3"></th>
+              <th className="px-5 py-4">Title</th>
+              <th className="px-5 py-4">Category</th>
+              <th className="px-5 py-4">Status</th>
+              <th className="px-5 py-4">Starts</th>
+              <th className="px-5 py-4"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {events.map((event) => (
               <tr key={event.id}>
-                <td className="px-4 py-3 font-medium">
+                <td className="px-5 py-4 font-medium">
                   <div className="flex items-center gap-3">
                     {/* Contain rather than crop, so a portrait poster is still
                         recognisable at thumbnail size. */}
@@ -124,11 +124,11 @@ export default async function AdminEventsPage() {
                       <img
                         src={event.heroImageUrl}
                         alt=""
-                        className="h-14 w-11 shrink-0 rounded border border-zinc-200 bg-zinc-50 object-contain"
+                        className="h-24 w-20 shrink-0 rounded-lg border border-zinc-200 bg-zinc-50 object-contain"
                       />
                     ) : (
                       <div
-                        className="flex h-14 w-11 shrink-0 items-center justify-center rounded border border-dashed border-zinc-300 text-[9px] uppercase tracking-wide text-zinc-400"
+                        className="flex h-24 w-20 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-[9px] uppercase tracking-wide text-zinc-400"
                         title="No banner set"
                       >
                         No
@@ -139,14 +139,14 @@ export default async function AdminEventsPage() {
                     <div className="min-w-0">
                       <Link
                         href={`/admin/events/${event.id}/registrations`}
-                        className="hover:underline"
+                        className="text-lg font-semibold hover:underline"
                       >
                         {event.title}
                       </Link>
                       {event.description && (
                         // A shortened preview: the text itself is cut to ~100
                         // characters, and the two-line clamp is the backstop.
-                        <p className="mt-0.5 line-clamp-2 max-w-md text-xs font-normal text-zinc-500">
+                        <p className="mt-1 line-clamp-2 max-w-md text-sm font-normal text-zinc-500">
                           {event.description.length > 100
                             ? `${event.description.slice(0, 100).trimEnd()}…`
                             : event.description}
@@ -154,17 +154,17 @@ export default async function AdminEventsPage() {
                       )}
                       <Link
                         href={`/admin/events/${event.id}/registrations`}
-                        className="mt-1 inline-block text-xs font-semibold text-teal-700 hover:underline"
+                        className="mt-1.5 inline-block text-sm font-semibold text-teal-700 hover:underline"
                       >
                         {countByEvent.get(event.id) ?? 0} registered
                       </Link>
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-zinc-500">{event.category ?? "—"}</td>
-                <td className="px-4 py-3">
+                <td className="px-5 py-4 text-zinc-500">{event.category ?? "—"}</td>
+                <td className="px-5 py-4">
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`rounded-full px-2.5 py-1 text-sm font-medium ${
                       event.status === "published"
                         ? "bg-teal-100 text-teal-800"
                         : event.status === "draft"
@@ -175,10 +175,10 @@ export default async function AdminEventsPage() {
                     {event.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-zinc-500">
+                <td className="px-5 py-4 text-zinc-500">
                   {event.startsAt?.toLocaleDateString("en-AU") ?? "—"}
                 </td>
-                <td className="space-x-3 px-4 py-3 text-right">
+                <td className="space-x-3 px-5 py-4 text-right">
                   <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
                     View
                   </Link>
