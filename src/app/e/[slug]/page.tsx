@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { countActiveRegistrations, getOpenState, getPublicEvent } from "@/lib/registration";
+import { getCurrentUser, isAdmin, isSuperAdmin } from "@/lib/access";
 import { RegistrationForm } from "@/components/RegistrationForm";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +26,26 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const spotsLeft =
     event.capacity != null ? event.capacity - (await countActiveRegistrations(event.id)) : null;
 
+  // Editing lives on the event's page: a signed-in organiser (own event),
+  // org admin or super-admin sees the button; the public never does.
+  const viewer = await getCurrentUser();
+  const canEdit =
+    viewer != null &&
+    (isSuperAdmin(viewer) ||
+      (viewer.orgId === event.orgId && (isAdmin(viewer) || event.ownerId === viewer.id)));
+
   return (
     <article>
+      {canEdit && (
+        <div className="mb-4 flex justify-end">
+          <Link
+            href={`/admin/events/${event.id}/edit`}
+            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+          >
+            Edit event
+          </Link>
+        </div>
+      )}
       {/* Top: large banner on the left, event details beside it. The
           registration form sits below, across the full width. */}
       <div

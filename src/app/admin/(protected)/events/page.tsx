@@ -5,7 +5,6 @@ import {
   canManageEvents,
   canViewAllEvents,
   eventListWhere,
-  isAdmin,
   requireUser,
 } from "@/lib/access";
 
@@ -33,7 +32,6 @@ export default async function AdminEventsPage() {
   const countByEvent = new Map(counts.map((c) => [c.eventId, c.count]));
 
   const canManage = canManageEvents(user);
-  const canEditEvent = (e: (typeof events)[number]) => isAdmin(user) || e.ownerId === user.id;
 
   return (
     <div>
@@ -98,14 +96,6 @@ export default async function AdminEventsPage() {
               >
                 Registered: {countByEvent.get(event.id) ?? 0}
               </Link>
-              {canEditEvent(event) && (
-                <Link
-                  href={`/admin/events/${event.id}/edit`}
-                  className="text-teal-700 hover:underline"
-                >
-                  Edit
-                </Link>
-              )}
             </div>
           </div>
         ))}
@@ -198,14 +188,6 @@ export default async function AdminEventsPage() {
                   >
                     Registrations
                   </Link>
-                  {canEditEvent(event) && (
-                    <Link
-                      href={`/admin/events/${event.id}/edit`}
-                      className="text-teal-700 hover:underline"
-                    >
-                      Edit
-                    </Link>
-                  )}
                 </td>
               </tr>
             ))}
