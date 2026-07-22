@@ -25,6 +25,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   { href: "/admin/events", label: "Events" },
                   // Viewers watch submissions only — no payments ledger.
                   ...(isViewer(user) ? [] : [{ href: "/admin/payments", label: "Payments" }]),
+                  // Organisers manage their own read-only assistants.
+                  ...(user.role === "organiser"
+                    ? [{ href: "/admin/assistants", label: "Assistants" }]
+                    : []),
                   // People is admin-only, and the page itself enforces that too.
                   ...(isAdmin(user) ? [{ href: "/admin/users", label: "People" }] : []),
                 ]

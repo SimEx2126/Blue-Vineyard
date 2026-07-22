@@ -22,6 +22,9 @@ export const user = pgTable("user", {
   orgId: integer("org_id"),
   role: text("role").default("organiser"),
   active: boolean("active").default(true),
+  // A viewer invited by an organiser is scoped to that organiser's events
+  // (read-only). Null for everyone else, including org-wide viewers.
+  assistantOf: text("assistant_of"),
 });
 
 export const session = pgTable(

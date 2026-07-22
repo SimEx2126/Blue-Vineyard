@@ -28,6 +28,9 @@ export type CurrentUser = {
   orgId: number | null;
   role: string;
   active: boolean;
+  // For viewers invited by an organiser: the organiser whose events they may
+  // see. Null for everyone else, including org-wide viewers.
+  assistantOf: string | null;
 };
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -46,6 +49,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     orgId: u.orgId ?? null,
     role: u.role ?? "organiser",
     active: true,
+    assistantOf: u.assistantOf ?? null,
   };
 }
 
@@ -79,16 +83,27 @@ export function isAdmin(user: CurrentUser) {
   return user.role === "admin";
 }
 
-// A read-only caretaker who watches every event's submissions org-wide, e.g.
-// covering while an admin is away. Never edits, refunds, or manages people.
+// A read-only caretaker. Admin-created viewers watch every event's
+// submissions org-wide; organiser-invited viewers (assistants) are scoped to
+// their organiser's events. Neither ever edits, refunds, or manages people.
 export function isViewer(user: CurrentUser) {
   return user.role === "viewer";
 }
 
+// An organiser-invited read-only assistant: sees only that organiser's events.
+export function isAssistant(user: CurrentUser) {
+  return user.role === "viewer" && user.assistantOf != null;
+}
+
 // Who sees every event in their organization (not just their own) in the
-// dashboard and events list. Organisers see only the events they own.
+// dashboard and events list. Organisers see only the events they own, and
+// assistants only the events of the organiser who invited them.
 export function canViewAllEvents(user: CurrentUser) {
-  return isSuperAdmin(user) || user.role === "admin" || user.role === "viewer";
+  return (
+    isSuperAdmin(user) ||
+    user.role === "admin" ||
+    (user.role === "viewer" && !isAssistant(user))
+  );
 }
 
 // Who may create and own events. Viewers may not.
@@ -110,6 +125,8 @@ export function eventListWhere(user: CurrentUser): SQL | undefined {
   if (user.orgId == null) return eq(schema.events.id, -1); // matches nothing
   const inOrg = eq(schema.events.orgId, user.orgId);
   if (canViewAllEvents(user)) return inOrg;
+  // Assistants read their organiser's events; organisers their own.
+  if (isAssistant(user)) return and(inOrg, eq(schema.events.ownerId, user.assistantOf!));
   return and(inOrg, eq(schema.events.ownerId, user.id));
 }
 
@@ -149,9 +166,13 @@ export async function assertCanViewEvent(eventId: number) {
   });
   if (!event) notFound();
   if (isSuperAdmin(user)) return { event, user, canEdit: true };
-  // Confined to their own organization first, then by role within it.
+  // Confined to their own organization first, then by role within it. An
+  // assistant reads only the events of the organiser who invited them.
   if (event.orgId !== user.orgId) notFound();
   const canEdit = isAdmin(user) || event.ownerId === user.id;
-  if (!canEdit && !isViewer(user)) notFound();
+  if (!canEdit) {
+    if (!isViewer(user)) notFound();
+    if (isAssistant(user) && event.ownerId !== user.assistantOf) notFound();
+  }
   return { event, user, canEdit };
 }

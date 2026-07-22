@@ -34,7 +34,14 @@ export async function sendSetPasswordEmail(email: string) {
   }
 }
 
-export type InvitedAccount = { name: string; email: string; role: string; orgId: number };
+export type InvitedAccount = {
+  name: string;
+  email: string;
+  role: string;
+  orgId: number;
+  // Present when an organiser invites a read-only assistant scoped to them.
+  assistantOf?: string | null;
+};
 
 // Creates the account, stamps role/orgId/active (all input:false in the auth
 // config, so they are set here rather than accepted from the sign-up payload),
@@ -71,7 +78,12 @@ export async function createInvitedAccount(
 
   await db
     .update(authSchema.user)
-    .set({ role: input.role, orgId: input.orgId, active: true })
+    .set({
+      role: input.role,
+      orgId: input.orgId,
+      active: true,
+      assistantOf: input.assistantOf ?? null,
+    })
     .where(eq(authSchema.user.id, created.id));
 
   await sendSetPasswordEmail(input.email);

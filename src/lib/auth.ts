@@ -60,6 +60,9 @@ export const auth = betterAuth({
       // Deactivated people keep their events but cannot sign in. Checked on
       // every request, so an existing session stops working immediately.
       active: { type: "boolean", required: false, defaultValue: true, input: false },
+      // Set when an organiser invites a read-only assistant: the id of the
+      // organiser whose events the assistant may see.
+      assistantOf: { type: "string", required: false, input: false },
     },
   },
   session: {
