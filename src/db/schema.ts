@@ -102,6 +102,9 @@ export const registrations = pgTable("registrations", {
   proofReference: text("proof_reference"),
   proofSubmittedAt: timestamp("proof_submitted_at", { withTimezone: true }),
   readAt: timestamp("read_at", { withTimezone: true }),
+  // When the attendee was checked in at the event door. Null until they arrive;
+  // set it and they count towards attendance.
+  checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

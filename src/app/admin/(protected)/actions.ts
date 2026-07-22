@@ -279,3 +279,25 @@ export async function markRegistrationRead(registrationId: number) {
     .set({ readAt: new Date() })
     .where(eq(schema.registrations.id, registrationId));
 }
+
+/**
+ * Mark a registrant arrived at the door (or undo it). Used by the toggle on the
+ * registrations list; the fast door screen has its own reference-based action.
+ * Payment status is deliberately not a gate — who is standing at the door is the
+ * organiser's call.
+ */
+export async function setCheckIn(registrationId: number, checkedIn: boolean) {
+  await requireUser();
+  const registration = await db.query.registrations.findFirst({
+    where: eq(schema.registrations.id, registrationId),
+    columns: { eventId: true },
+  });
+  if (!registration) return;
+  await assertCanEditEvent(registration.eventId);
+  await db
+    .update(schema.registrations)
+    .set({ checkedInAt: checkedIn ? new Date() : null })
+    .where(eq(schema.registrations.id, registrationId));
+  revalidatePath(`/admin/events/${registration.eventId}/registrations`);
+  revalidatePath(`/admin/events/${registration.eventId}/check-in`);
+}

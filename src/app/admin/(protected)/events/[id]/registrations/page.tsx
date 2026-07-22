@@ -3,8 +3,48 @@ import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
 import { assertCanViewEvent } from "@/lib/access";
+import { setCheckIn } from "../../../actions";
 
 export const dynamic = "force-dynamic";
+
+// The check-in pill doubles as its own undo: green when arrived (submitting
+// clears it), an outline "Check in" when not. Read-only viewers see a plain
+// label instead of a button.
+function CheckInControl({
+  registrationId,
+  checkedIn,
+  canEdit,
+}: {
+  registrationId: number;
+  checkedIn: boolean;
+  canEdit: boolean;
+}) {
+  if (!canEdit) {
+    return checkedIn ? (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700">
+        ✓ Arrived
+      </span>
+    ) : (
+      <span className="text-xs text-zinc-400">—</span>
+    );
+  }
+  return (
+    <form action={setCheckIn.bind(null, registrationId, !checkedIn)}>
+      {checkedIn ? (
+        <button
+          title="Undo check-in"
+          className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800 transition hover:bg-teal-200"
+        >
+          ✓ Arrived
+        </button>
+      ) : (
+        <button className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 transition hover:border-teal-600 hover:bg-teal-50 hover:text-teal-700">
+          Check in
+        </button>
+      )}
+    </form>
+  );
+}
 
 export default async function RegistrationsPage({
   params,
@@ -16,7 +56,7 @@ export default async function RegistrationsPage({
   const { id } = await params;
   const { q } = await searchParams;
   const eventId = Number(id);
-  const { event } = await assertCanViewEvent(eventId);
+  const { event, canEdit } = await assertCanViewEvent(eventId);
 
   let registrations = await db.query.registrations.findMany({
     where: eq(schema.registrations.eventId, eventId),
@@ -53,6 +93,7 @@ export default async function RegistrationsPage({
   }
 
   const confirmed = registrations.filter((r) => r.status === "confirmed").length;
+  const arrived = registrations.filter((r) => r.checkedInAt).length;
 
   return (
     <div>
@@ -61,7 +102,8 @@ export default async function RegistrationsPage({
           <h1 className="text-2xl font-bold">{event.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">
             {confirmed} confirmed
-            {event.capacity != null && ` of ${event.capacity}`} · {registrations.length} total
+            {event.capacity != null && ` of ${event.capacity}`} · {arrived} checked in ·{" "}
+            {registrations.length} total
           </p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -76,6 +118,14 @@ export default async function RegistrationsPage({
               Search
             </button>
           </form>
+          {canEdit && (
+            <Link
+              href={`/admin/events/${eventId}/check-in`}
+              className="shrink-0 rounded-lg border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+            >
+              Door check-in
+            </Link>
+          )}
           <a
             href={`/admin/events/${eventId}/registrations/export`}
             className="shrink-0 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
@@ -86,40 +136,53 @@ export default async function RegistrationsPage({
       </div>
 
       {/* Cards on phones — this is the screen an organiser opens at the door to
-          look someone up, so the ticket number and status must be reachable. */}
+          look someone up, so the ticket number, status and check-in must be
+          reachable. */}
       <div className="mt-6 space-y-3 sm:hidden">
         {registrations.map((r) => (
-          <Link
+          <div
             key={r.id}
-            href={`/admin/events/${eventId}/registrations/${r.id}`}
-            className={`block rounded-xl border p-4 ${
-              r.readAt ? "border-zinc-200 bg-white" : "border-teal-200 bg-teal-50/40"
+            className={`rounded-xl border p-4 ${
+              r.checkedInAt
+                ? "border-teal-300 bg-teal-50/60"
+                : r.readAt
+                  ? "border-zinc-200 bg-white"
+                  : "border-teal-200 bg-teal-50/40"
             }`}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-medium">
-                  {r.contactName}
-                  {!r.readAt && (
-                    <span className="ml-2 rounded-full bg-teal-700 px-1.5 text-[10px] font-semibold text-white">
-                      new
-                    </span>
-                  )}
-                </p>
-                <p className="truncate text-sm text-zinc-500">{r.contactEmail}</p>
+            <Link href={`/admin/events/${eventId}/registrations/${r.id}`} className="block">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {r.contactName}
+                    {!r.readAt && (
+                      <span className="ml-2 rounded-full bg-teal-700 px-1.5 text-[10px] font-semibold text-white">
+                        new
+                      </span>
+                    )}
+                  </p>
+                  <p className="truncate text-sm text-zinc-500">{r.contactEmail}</p>
+                </div>
+                <span className="shrink-0 font-mono text-xs font-semibold text-zinc-700">
+                  {r.reference}
+                </span>
               </div>
-              <span className="shrink-0 font-mono text-xs font-semibold text-zinc-700">
-                {r.reference}
-              </span>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-zinc-100 pt-3 text-sm">
+            </Link>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-zinc-100 pt-3 text-sm">
               <span>{r.status}</span>
               <span className="text-zinc-500">
                 {paymentByReg.get(r.id) ?? (r.amountCents === 0 ? "free" : "—")}
               </span>
-              <span className="ml-auto font-medium">{formatCents(r.amountCents)}</span>
+              <span className="font-medium">{formatCents(r.amountCents)}</span>
+              <span className="ml-auto">
+                <CheckInControl
+                  registrationId={r.id}
+                  checkedIn={Boolean(r.checkedInAt)}
+                  canEdit={canEdit}
+                />
+              </span>
             </div>
-          </Link>
+          </div>
         ))}
         {registrations.length === 0 && (
           <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500">
@@ -138,6 +201,7 @@ export default async function RegistrationsPage({
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Amount</th>
               <th className="px-4 py-3">Payment</th>
+              <th className="px-4 py-3">Arrived</th>
               <th className="px-4 py-3">Submitted</th>
             </tr>
           </thead>
@@ -166,6 +230,13 @@ export default async function RegistrationsPage({
                 <td className="px-4 py-3 capitalize text-zinc-500">
                   {paymentByReg.get(r.id) ?? (r.amountCents === 0 ? "free" : "—")}
                 </td>
+                <td className="px-4 py-3">
+                  <CheckInControl
+                    registrationId={r.id}
+                    checkedIn={Boolean(r.checkedInAt)}
+                    canEdit={canEdit}
+                  />
+                </td>
                 <td className="px-4 py-3 text-zinc-500">
                   {r.createdAt.toLocaleDateString("en-AU")}
                 </td>
@@ -173,7 +244,7 @@ export default async function RegistrationsPage({
             ))}
             {registrations.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-zinc-500">
                   No registrations{q ? " matching your search" : " yet"}.
                 </td>
               </tr>
