@@ -7,6 +7,8 @@ import {
   eventListWhere,
   requireUser,
 } from "@/lib/access";
+import { publicEventUrl, qrSvg } from "@/lib/qr";
+import { ShareQrButton } from "@/components/ShareQrButton";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,13 @@ export default async function AdminEventsPage() {
         .groupBy(schema.registrations.eventId)
     : [];
   const countByEvent = new Map(counts.map((c) => [c.eventId, c.count]));
+
+  // Each row carries the event's QR + link, ready to share from the list.
+  const qrByEvent = new Map(
+    await Promise.all(
+      events.map(async (e) => [e.id, await qrSvg(publicEventUrl(e.slug))] as const)
+    )
+  );
 
   const canManage = canManageEvents(user);
 
@@ -86,7 +95,7 @@ export default async function AdminEventsPage() {
                 </span>
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-4 border-t border-zinc-100 pt-3 text-sm">
+            <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-zinc-100 pt-3 text-sm">
               <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
                 View
               </Link>
@@ -96,6 +105,12 @@ export default async function AdminEventsPage() {
               >
                 Registered: {countByEvent.get(event.id) ?? 0}
               </Link>
+              <span className="ml-auto">
+                <ShareQrButton
+                  url={publicEventUrl(event.slug)}
+                  qrMarkup={qrByEvent.get(event.id) ?? ""}
+                />
+              </span>
             </div>
           </div>
         ))}
@@ -169,10 +184,16 @@ export default async function AdminEventsPage() {
                 <td className="px-5 py-4 text-zinc-500">
                   {event.startsAt?.toLocaleDateString("en-AU") ?? "—"}
                 </td>
-                <td className="space-x-3 px-5 py-4 text-right">
-                  <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
-                    View
-                  </Link>
+                <td className="px-5 py-4">
+                  <div className="flex items-center justify-end gap-3">
+                    <ShareQrButton
+                      url={publicEventUrl(event.slug)}
+                      qrMarkup={qrByEvent.get(event.id) ?? ""}
+                    />
+                    <Link href={`/e/${event.slug}`} className="text-zinc-500 hover:underline">
+                      View
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}

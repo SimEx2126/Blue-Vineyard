@@ -38,7 +38,15 @@ export function ShareQrButton({ url, qrMarkup }: { url: string; qrMarkup: string
       </button>
 
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-72 rounded-xl border border-zinc-200 bg-white p-4 shadow-xl">
+        <>
+          {/* Backdrop: click anywhere outside to close. Fixed positioning so
+              the card never clips inside scrollable tables. */}
+          <div
+            className="fixed inset-0 z-20 bg-black/30"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div className="fixed left-1/2 top-1/2 z-30 w-72 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-200 bg-white p-4 shadow-xl">
           <p className="text-sm font-semibold text-zinc-900">Share this event</p>
           <div
             className="mx-auto mt-3 w-44 rounded-lg border border-zinc-200 p-2 [&_svg]:h-auto [&_svg]:w-full"
@@ -66,7 +74,8 @@ export function ShareQrButton({ url, qrMarkup }: { url: string; qrMarkup: string
           >
             Download QR code
           </a>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
