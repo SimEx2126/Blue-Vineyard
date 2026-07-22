@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Scale the whole UI up: all Tailwind sizes are rem-based, so raising the
+   root font size (16px -> 18px) enlarges text, spacing and controls together. */
+html {
+  font-size: 112.5%;
+}
+
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
