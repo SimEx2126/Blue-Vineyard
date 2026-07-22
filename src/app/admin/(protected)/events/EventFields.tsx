@@ -123,14 +123,18 @@ export function EventFields({ event }: { event?: EventRow }) {
         Attendees (blank = unlimited)
         <input type="number" name="capacity" min={1} defaultValue={event?.capacity ?? ""} className={input} />
       </label>
-      <label className={label}>
-        Status
-        <select name="status" defaultValue={event?.status ?? "draft"} className={input}>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-          <option value="archived">Archived</option>
-        </select>
-      </label>
+      {/* New events publish immediately; the status control only appears when
+          editing, for archiving or taking an event offline. */}
+      {event && (
+        <label className={label}>
+          Status
+          <select name="status" defaultValue={event.status} className={input}>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
+          </select>
+        </label>
+      )}
       <div className="flex items-center sm:col-span-2">
         <label className="flex items-center gap-2 text-sm font-medium text-zinc-700">
           <input

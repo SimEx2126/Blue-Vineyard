@@ -89,7 +89,9 @@ function eventFieldsFrom(fd: FormData) {
     fullMessage: str(fd, "fullMessage"),
     requiresPayment: fd.get("requiresPayment") === "on",
     paymentInstructions: str(fd, "paymentInstructions"),
-    status: str(fd, "status") ?? "draft",
+    // The create form has no status control — new events go straight live.
+    // The edit form submits its select, so its value wins there.
+    status: str(fd, "status") ?? "published",
   };
 }
 
