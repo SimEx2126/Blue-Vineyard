@@ -54,12 +54,21 @@ export default async function AdminEventsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{canViewAllEvents(user) ? "All events" : "Your events"}</h1>
         {canManage && (
-          <Link
-            href="/admin/events/new"
-            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
-          >
-            New event
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/events/new"
+              className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+            >
+              New event
+            </Link>
+            {/* A standalone registration form — no event needed. */}
+            <Link
+              href="/admin/events/new?kind=form"
+              className="rounded-lg border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+            >
+              Create form
+            </Link>
+          </div>
         )}
       </div>
       {/* Cards on phones; the table below is too wide to fit and was clipping
@@ -85,8 +94,13 @@ export default async function AdminEventsPage() {
                 >
                   {event.title}
                 </Link>
+                {event.kind === "form" && (
+                  <span className="ml-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-800">
+                    Form
+                  </span>
+                )}
                 <p className="mt-0.5 text-xs text-zinc-500">
-                  {event.category ?? "—"}
+                  {event.kind === "form" ? "" : (event.category ?? "—")}
                   {event.startsAt ? ` · ${event.startsAt.toLocaleDateString("en-AU")}` : ""}
                 </p>
               </div>
@@ -148,6 +162,11 @@ export default async function AdminEventsPage() {
               >
                 {event.title}
               </Link>
+              {event.kind === "form" && (
+                <span className="ml-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-800 align-middle">
+                  Form
+                </span>
+              )}
               {event.description && (
                 // A shortened preview: the text itself is cut to ~100
                 // characters, and the two-line clamp is the backstop.
@@ -167,13 +186,16 @@ export default async function AdminEventsPage() {
 
             <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
               {event.category && <span className="text-sm text-zinc-500">{event.category}</span>}
-              <span className="text-sm text-zinc-500">
-                {event.startsAt?.toLocaleDateString("en-AU", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                }) ?? "Date TBC"}
-              </span>
+              {/* A form has no date by design, so no "Date TBC" nag. */}
+              {event.kind !== "form" && (
+                <span className="text-sm text-zinc-500">
+                  {event.startsAt?.toLocaleDateString("en-AU", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  }) ?? "Date TBC"}
+                </span>
+              )}
               {event.ownerId && ownerById.get(event.ownerId) && (
                 <span className="text-sm text-zinc-500">
                   Admin: <span className="text-zinc-700">{ownerById.get(event.ownerId)}</span>

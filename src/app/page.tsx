@@ -21,7 +21,9 @@ export default async function HomePage({
   const query = q?.trim();
 
   // Draft and archived events must never appear here, whatever else is filtered.
-  const filters: SQL[] = [eq(schema.events.status, "published")];
+  // Standalone forms are shared by direct link/QR, not browsed, so they stay
+  // out of the public listing too.
+  const filters: SQL[] = [eq(schema.events.status, "published"), eq(schema.events.kind, "event")];
   if (category) filters.push(eq(schema.events.category, category));
   if (query) {
     const like = `%${query}%`;

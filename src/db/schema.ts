@@ -34,6 +34,9 @@ export const events = pgTable("events", {
   // Auth issues string ids rather than serials.
   ownerId: text("owner_id").references(() => user.id),
   slug: varchar("slug", { length: 200 }).notNull().unique(),
+  // A "form" is a light event: just a title/description carrying the fixed
+  // registration form, with no date, location or payment of its own.
+  kind: text("kind").notNull().default("event"), // event | form
   title: text("title").notNull(),
   category: text("category"),
   heroImageUrl: text("hero_image_url"),

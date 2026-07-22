@@ -100,13 +100,17 @@ export async function createEvent(fd: FormData) {
   // Viewers are read-only; only admins and organisers create events.
   if (!canManageEvents(user)) notFound();
   const fields = eventFieldsFrom(fd);
-  if (!fields.title) redirect("/admin/events/new?error=A+title+is+required");
+  // A "form" is a light event; the kind is fixed at creation, and updateEvent
+  // never touches it.
+  const kind = str(fd, "kind") === "form" ? "form" : "event";
+  if (!fields.title)
+    redirect(`/admin/events/new?error=A+title+is+required${kind === "form" ? "&kind=form" : ""}`);
   // Slug is not typed on creation — derive a unique one from the title. This
   // overrides the empty slug from the (now absent) form field.
   const slug = await generateEventSlug(fields.title);
   const [event] = await db
     .insert(schema.events)
-    .values({ ...fields, slug, orgId: await orgIdFor(user), ownerId: user.id })
+    .values({ ...fields, kind, slug, orgId: await orgIdFor(user), ownerId: user.id })
     .returning();
   revalidatePath("/admin/events");
   redirect(`/admin/events/${event.id}/edit`);

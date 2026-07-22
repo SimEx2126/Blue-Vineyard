@@ -20,7 +20,11 @@ function dLocal(d: Date | null | undefined) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export function EventFields({ event }: { event?: EventRow }) {
+export function EventFields({ event, kind }: { event?: EventRow; kind?: "event" | "form" }) {
+  // A standalone form is a light event: just a title, description and banner
+  // carrying the fixed registration form — no schedule, location, capacity or
+  // payment of its own, so those fields are hidden.
+  const isForm = (kind ?? event?.kind) === "form";
   // Registrations close follows the event end date: setting the end date fills
   // in the close date, until the organiser sets close to something of their
   // own. On an existing event with a saved close date, that saved value wins.
@@ -40,7 +44,7 @@ export function EventFields({ event }: { event?: EventRow }) {
           name="title"
           required
           defaultValue={event?.title}
-          placeholder="Name of the event"
+          placeholder={isForm ? "Name of the form" : "Name of the event"}
           className="mt-1 w-full rounded-lg border-2 border-teal-600/40 bg-white px-4 py-3 text-lg font-semibold shadow-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
         />
       </label>
@@ -62,20 +66,26 @@ export function EventFields({ event }: { event?: EventRow }) {
           </span>
         </label>
       )}
-      <label className={label}>
-        Category
-        <input name="category" defaultValue={event?.category ?? ""} className={input} placeholder="Womens Ministries" />
-      </label>
-      <label className={label}>
-        Location
-        <input name="location" defaultValue={event?.location ?? ""} className={input} />
-      </label>
+      {!isForm && (
+        <>
+          <label className={label}>
+            Category
+            <input name="category" defaultValue={event?.category ?? ""} className={input} placeholder="Womens Ministries" />
+          </label>
+          <label className={label}>
+            Location
+            <input name="location" defaultValue={event?.location ?? ""} className={input} />
+          </label>
+        </>
+      )}
       <div className="sm:col-span-2">
         <label className={label}>
           Description
           <textarea name="description" rows={5} defaultValue={event?.description ?? ""} className={input} />
         </label>
       </div>
+      {!isForm && (
+        <>
       <label className={label}>
         Event starts
         <input type="date" name="startsAt" defaultValue={dLocal(event?.startsAt)} className={input} />
@@ -123,6 +133,8 @@ export function EventFields({ event }: { event?: EventRow }) {
         Attendees (blank = unlimited)
         <input type="number" name="capacity" min={1} defaultValue={event?.capacity ?? ""} className={input} />
       </label>
+        </>
+      )}
       {/* New events publish immediately; the status control only appears when
           editing, for archiving or taking an event offline. */}
       {event && (
@@ -135,6 +147,8 @@ export function EventFields({ event }: { event?: EventRow }) {
           </select>
         </label>
       )}
+      {!isForm && (
+        <>
       {/* Emphasised: this toggle decides free vs paid, so it stands out from
           the rest of the fields. */}
       <div className="sm:col-span-2">
@@ -184,6 +198,8 @@ export function EventFields({ event }: { event?: EventRow }) {
           </span>
         </label>
       </div>
+        </>
+      )}
     </div>
   );
 }
