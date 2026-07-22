@@ -32,15 +32,23 @@ export function EventFields({ event }: { event?: EventRow }) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <label className={label}>
+      {/* The title is the one field every event needs, so it gets the full
+          width and a larger face than the rest of the form. */}
+      <label className={label + " sm:col-span-2"}>
         Title
-        <input name="title" required defaultValue={event?.title} className={input} />
+        <input
+          name="title"
+          required
+          defaultValue={event?.title}
+          placeholder="Name of the event"
+          className="mt-1 w-full rounded-lg border-2 border-teal-600/40 bg-white px-4 py-3 text-lg font-semibold shadow-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
+        />
       </label>
       {/* The slug is the event's public web address. On creation it is derived
           from the title automatically, so the field appears only when editing
           an existing event — where changing it is a deliberate act. */}
       {event && (
-        <label className={label}>
+        <label className={label + " sm:col-span-2"}>
           Slug (URL)
           <input
             name="slug"
