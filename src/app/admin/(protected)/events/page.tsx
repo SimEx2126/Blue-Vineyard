@@ -9,14 +9,36 @@ import {
 } from "@/lib/access";
 import { publicEventUrl, qrSvg } from "@/lib/qr";
 import { ShareQrButton } from "@/components/ShareQrButton";
+import { setEventFeatured } from "../actions";
 
 export const dynamic = "force-dynamic";
+
+// The quick highlight toggle on each row: a filled amber star when featured, an
+// outline when not. Editors only.
+function FeatureStar({ eventId, featured }: { eventId: number; featured: boolean }) {
+  return (
+    <form action={setEventFeatured.bind(null, eventId, !featured)}>
+      <button
+        title={featured ? "Remove highlight" : "Highlight this event"}
+        aria-label={featured ? "Remove highlight" : "Highlight this event"}
+        className={`flex h-10 w-10 items-center justify-center rounded-lg border text-lg transition ${
+          featured
+            ? "border-amber-300 bg-amber-50 text-amber-500 hover:bg-amber-100"
+            : "border-zinc-300 bg-white text-zinc-300 hover:border-amber-400 hover:text-amber-400"
+        }`}
+      >
+        ★
+      </button>
+    </form>
+  );
+}
 
 export default async function AdminEventsPage() {
   const user = await requireUser();
   const events = await db.query.events.findMany({
     where: eventListWhere(user),
-    orderBy: (e, { desc }) => [desc(e.createdAt)],
+    // Highlighted events float to the top; newest first within each group.
+    orderBy: (e, { desc }) => [desc(e.featured), desc(e.createdAt)],
   });
 
   // Who has registered, per event — the count links through to the list of
@@ -75,7 +97,12 @@ export default async function AdminEventsPage() {
           its action links. */}
       <div className="mt-6 space-y-3 sm:hidden">
         {events.map((event) => (
-          <div key={event.id} className="rounded-xl border border-zinc-200 bg-white p-4">
+          <div
+            key={event.id}
+            className={`rounded-xl border bg-white p-4 ${
+              event.featured ? "border-amber-300 ring-1 ring-amber-200" : "border-zinc-200"
+            }`}
+          >
             <div className="flex gap-3">
               {event.heroImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -99,6 +126,11 @@ export default async function AdminEventsPage() {
                     Form
                   </span>
                 )}
+                {event.featured && (
+                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                    ★ Featured
+                  </span>
+                )}
                 <p className="mt-0.5 text-xs text-zinc-500">
                   {event.kind === "form" ? "" : (event.category ?? "—")}
                   {event.startsAt ? ` · ${event.startsAt.toLocaleDateString("en-AU")}` : ""}
@@ -115,7 +147,8 @@ export default async function AdminEventsPage() {
               >
                 Registered: {countByEvent.get(event.id) ?? 0}
               </Link>
-              <span className="ml-auto">
+              <span className="ml-auto flex items-center gap-2">
+                {canManage && <FeatureStar eventId={event.id} featured={event.featured} />}
                 <ShareQrButton
                   url={publicEventUrl(event.slug)}
                   qrMarkup={qrByEvent.get(event.id) ?? ""}
@@ -133,7 +166,9 @@ export default async function AdminEventsPage() {
         {events.map((event) => (
           <div
             key={event.id}
-            className="flex items-center gap-5 rounded-xl border border-zinc-200 bg-white p-5"
+            className={`flex items-center gap-5 rounded-xl border bg-white p-5 ${
+              event.featured ? "border-amber-300 ring-1 ring-amber-200" : "border-zinc-200"
+            }`}
           >
             {/* Contain rather than crop, so a portrait poster is still
                 recognisable at thumbnail size. */}
@@ -165,6 +200,11 @@ export default async function AdminEventsPage() {
               {event.kind === "form" && (
                 <span className="ml-2 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-800 align-middle">
                   Form
+                </span>
+              )}
+              {event.featured && (
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 align-middle">
+                  ★ Featured
                 </span>
               )}
               {event.description && (
@@ -204,6 +244,7 @@ export default async function AdminEventsPage() {
             </div>
 
             <div className="flex shrink-0 items-center gap-3 border-l border-zinc-200 pl-5">
+              {canManage && <FeatureStar eventId={event.id} featured={event.featured} />}
               <ShareQrButton
                 url={publicEventUrl(event.slug)}
                 qrMarkup={qrByEvent.get(event.id) ?? ""}

@@ -74,6 +74,11 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         <div>
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
         <h1 className="text-2xl font-bold tracking-tight">{event.title}</h1>
+        {event.featured && (
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-800">
+            ★ Featured
+          </span>
+        )}
         {event.category && (
           <span className="text-xs font-medium uppercase tracking-wide text-teal-700">
             {event.category}

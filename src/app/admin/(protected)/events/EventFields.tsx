@@ -147,6 +147,26 @@ export function EventFields({ event, kind }: { event?: EventRow; kind?: "event" 
           </select>
         </label>
       )}
+      {/* Highlight: pins the event to the top of the lists with a badge. Amber
+          so it reads as "attention" and stands apart from the teal payment toggle. */}
+      <div className="sm:col-span-2">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 p-4">
+          <input
+            type="checkbox"
+            name="featured"
+            defaultChecked={event?.featured ?? false}
+            className="mt-0.5 h-5 w-5 accent-amber-500"
+          />
+          <span>
+            <span className="block text-base font-semibold text-amber-900">
+              ★ Highlight this event
+            </span>
+            <span className="mt-0.5 block text-sm text-amber-800/80">
+              Pins it to the top of the events list with a badge — for urgent or headline events.
+            </span>
+          </span>
+        </label>
+      </div>
       {!isForm && (
         <>
       {/* Emphasised: this toggle decides free vs paid, so it stands out from

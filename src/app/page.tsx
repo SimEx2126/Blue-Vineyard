@@ -38,7 +38,8 @@ export default async function HomePage({
 
   const events = await db.query.events.findMany({
     where: and(...filters),
-    orderBy: (e, { asc }) => [asc(e.startsAt)],
+    // Highlighted events lead the list; the rest follow by soonest date.
+    orderBy: (e, { asc, desc }) => [desc(e.featured), asc(e.startsAt)],
   });
 
   const allCategories = Array.from(
@@ -114,29 +115,38 @@ export default async function HomePage({
           <Link
             key={event.id}
             href={`/e/${event.slug}`}
-            className="group overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+            className={`group overflow-hidden rounded-xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${
+              event.featured ? "border-amber-300 ring-2 ring-amber-200" : "border-zinc-200"
+            }`}
           >
             {/* The organiser's banner leads the card. Posters come in all shapes,
                 so contain rather than crop — the whole graphic stays readable. */}
-            {event.heroImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={event.heroImageUrl}
-                alt={`${event.title} event banner`}
-                className="aspect-[4/5] w-full bg-zinc-100 object-contain"
-              />
-            ) : (
-              <div className="flex aspect-[4/5] w-full flex-col justify-end bg-gradient-to-br from-teal-700 to-teal-900 p-6">
-                {event.category && (
-                  <span className="text-xs font-medium uppercase tracking-wide text-white/70">
-                    {event.category}
-                  </span>
-                )}
-                <span className="mt-1 text-2xl font-semibold leading-tight text-white">
-                  {event.title}
+            <div className="relative">
+              {event.featured && (
+                <span className="absolute left-3 top-3 z-10 rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-950 shadow">
+                  ★ Featured
                 </span>
-              </div>
-            )}
+              )}
+              {event.heroImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={event.heroImageUrl}
+                  alt={`${event.title} event banner`}
+                  className="aspect-[4/5] w-full bg-zinc-100 object-contain"
+                />
+              ) : (
+                <div className="flex aspect-[4/5] w-full flex-col justify-end bg-gradient-to-br from-teal-700 to-teal-900 p-6">
+                  {event.category && (
+                    <span className="text-xs font-medium uppercase tracking-wide text-white/70">
+                      {event.category}
+                    </span>
+                  )}
+                  <span className="mt-1 text-2xl font-semibold leading-tight text-white">
+                    {event.title}
+                  </span>
+                </div>
+              )}
+            </div>
             <div className="p-4">
               {event.category && (
                 <div className="text-xs font-medium uppercase tracking-wide text-teal-700">

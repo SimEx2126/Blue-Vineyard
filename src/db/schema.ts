@@ -55,6 +55,9 @@ export const events = pgTable("events", {
   // since payment happens outside the app (no card gateway).
   paymentInstructions: text("payment_instructions"),
   status: text("status").notNull().default("draft"), // draft | published | archived
+  // Highlighted / prioritised: sorts to the top of the admin and public lists
+  // and shows a badge, for events the organiser wants to draw attention to.
+  featured: boolean("featured").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

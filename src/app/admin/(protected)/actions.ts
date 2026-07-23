@@ -91,6 +91,7 @@ function eventFieldsFrom(fd: FormData) {
     capacity: num(fd, "capacity"),
     fullMessage: str(fd, "fullMessage"),
     requiresPayment: fd.get("requiresPayment") === "on",
+    featured: fd.get("featured") === "on",
     paymentInstructions: str(fd, "paymentInstructions"),
     // The create form has no status control — new events go straight live.
     // The edit form submits its select, so its value wins there.
@@ -303,6 +304,17 @@ export async function setCheckIn(registrationId: number, checkedIn: boolean) {
     .where(eq(schema.registrations.id, registrationId));
   revalidatePath(`/admin/events/${registration.eventId}/registrations`);
   revalidatePath(`/admin/events/${registration.eventId}/check-in`);
+}
+
+/**
+ * Highlight or un-highlight an event from the events list, without opening the
+ * edit form. Featured events sort first and show a badge.
+ */
+export async function setEventFeatured(eventId: number, featured: boolean) {
+  await assertCanEditEvent(eventId);
+  await db.update(schema.events).set({ featured }).where(eq(schema.events.id, eventId));
+  revalidatePath("/admin/events");
+  revalidatePath("/");
 }
 
 /**
