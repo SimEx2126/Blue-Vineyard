@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1250" viewBox="0 0 1000 1250" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d9488"/>
+      <stop offset="1" stop-color="#134e4a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="1250" fill="url(#g)"/>
+  <circle cx="880" cy="140" r="260" fill="#ffffff" opacity="0.06"/>
+  <circle cx="120" cy="1120" r="200" fill="#ffffff" opacity="0.05"/>
+  <circle cx="880" cy="140" r="150" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.15"/>
+  <!-- brand row -->
+  <rect x="90" y="90" width="46" height="46" rx="12" fill="#ffffff" opacity="0.9"/>
+  <rect x="101" y="104" width="24" height="20" rx="4" fill="none" stroke="#134e4a" stroke-width="3"/>
+  <line x1="101" y1="112" x2="125" y2="112" stroke="#134e4a" stroke-width="3"/>
+  <text x="152" y="122" font-size="22" font-weight="700" letter-spacing="4" fill="#ffffff">SOUTH NSW CONFERENCE</text>
+  <!-- kicker -->
+  <text x="90" y="720" font-size="30" font-weight="700" letter-spacing="6" fill="#ffffff" opacity="0.85">COMMUNITY SERVICE</text>
+  <rect x="90" y="742" width="90" height="6" rx="3" fill="#ffffff" opacity="0.85"/>
+  <text x="90" y="839.5" font-size="110" font-weight="800" fill="#ffffff" letter-spacing="-1">COMMUNITY</text><text x="90" y="957.5" font-size="110" font-weight="800" fill="#ffffff" letter-spacing="-1">OUTREACH DAY</text>
+  <!-- footer -->
+  <line x1="90" y1="1120" x2="910" y2="1120" stroke="#ffffff" stroke-width="2" opacity="0.25"/>
+  <text x="90" y="1170" font-size="30" font-weight="600" fill="#ffffff">30 August 2026</text>
+  <text x="90" y="1210" font-size="26" fill="#ffffff" opacity="0.8">Wagga Wagga CBD</text>
+</svg>
