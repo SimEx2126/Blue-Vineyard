@@ -27,7 +27,7 @@ export function SiteHeader() {
             href="/admin"
             className="rounded-lg bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
           >
-            Organiser sign in
+            Organiser
           </Link>
         </nav>
       </div>
