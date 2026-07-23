@@ -6,6 +6,9 @@ import { notFound, redirect } from "next/navigation";
 import { db, schema, authSchema } from "@/db";
 import { assertCanEditEvent, canManageEvents, isAdmin, requireUser } from "@/lib/access";
 import { confirmRegistration } from "@/lib/confirm";
+import { isEventOver } from "@/lib/review";
+import { sendReviewInviteEmail } from "@/lib/review-email";
+import { isNull } from "drizzle-orm";
 
 function str(fd: FormData, key: string) {
   const v = fd.get(key);
@@ -300,4 +303,37 @@ export async function setCheckIn(registrationId: number, checkedIn: boolean) {
     .where(eq(schema.registrations.id, registrationId));
   revalidatePath(`/admin/events/${registration.eventId}/registrations`);
   revalidatePath(`/admin/events/${registration.eventId}/check-in`);
+}
+
+/**
+ * Email a post-event review invite to every confirmed registrant who hasn't
+ * been invited yet, stamping reviewInviteSentAt so a second click only reaches
+ * newcomers. Editors only, and only once the event is over.
+ */
+export async function sendReviewInvites(eventId: number) {
+  const { event } = await assertCanEditEvent(eventId);
+  if (!isEventOver(event)) {
+    redirect(`/admin/events/${eventId}/registrations?error=not-over`);
+  }
+
+  const pending = await db.query.registrations.findMany({
+    where: and(
+      eq(schema.registrations.eventId, eventId),
+      eq(schema.registrations.status, "confirmed"),
+      isNull(schema.registrations.reviewInviteSentAt)
+    ),
+  });
+
+  let sent = 0;
+  for (const registration of pending) {
+    await sendReviewInviteEmail(registration, event);
+    await db
+      .update(schema.registrations)
+      .set({ reviewInviteSentAt: new Date() })
+      .where(eq(schema.registrations.id, registration.id));
+    sent += 1;
+  }
+
+  revalidatePath(`/admin/events/${eventId}/registrations`);
+  redirect(`/admin/events/${eventId}/registrations?invited=${sent}`);
 }

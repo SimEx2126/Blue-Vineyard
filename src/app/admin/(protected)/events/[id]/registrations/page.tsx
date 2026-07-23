@@ -3,7 +3,8 @@ import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { formatCents } from "@/lib/pricing";
 import { assertCanViewEvent } from "@/lib/access";
-import { setCheckIn } from "../../../actions";
+import { getReviewSummary, isEventOver } from "@/lib/review";
+import { setCheckIn, sendReviewInvites } from "../../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -51,12 +52,14 @@ export default async function RegistrationsPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; invited?: string; error?: string }>;
 }) {
   const { id } = await params;
-  const { q } = await searchParams;
+  const { q, invited, error } = await searchParams;
   const eventId = Number(id);
   const { event, canEdit } = await assertCanViewEvent(eventId);
+  const eventOver = isEventOver(event);
+  const reviews = await getReviewSummary(eventId);
 
   let registrations = await db.query.registrations.findMany({
     where: eq(schema.registrations.eventId, eventId),
@@ -104,6 +107,14 @@ export default async function RegistrationsPage({
             {confirmed} confirmed
             {event.capacity != null && ` of ${event.capacity}`} · {arrived} checked in ·{" "}
             {registrations.length} total
+            {reviews.count > 0 && reviews.average != null && (
+              <>
+                {" · "}
+                <span className="text-amber-500">★</span>{" "}
+                <span className="font-medium text-zinc-700">{reviews.average.toFixed(1)}</span> avg (
+                {reviews.count} {reviews.count === 1 ? "review" : "reviews"})
+              </>
+            )}
           </p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -126,6 +137,22 @@ export default async function RegistrationsPage({
               Door check-in
             </Link>
           )}
+          {/* Reviews open once the event is over: read them, and email invites. */}
+          {eventOver && (
+            <Link
+              href={`/admin/events/${eventId}/reviews`}
+              className="shrink-0 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+            >
+              Reviews{reviews.count > 0 ? ` (${reviews.count})` : ""}
+            </Link>
+          )}
+          {canEdit && eventOver && (
+            <form action={sendReviewInvites.bind(null, eventId)}>
+              <button className="shrink-0 rounded-lg border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50">
+                Send review invites
+              </button>
+            </form>
+          )}
           <a
             href={`/admin/events/${eventId}/registrations/export`}
             className="shrink-0 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
@@ -134,6 +161,19 @@ export default async function RegistrationsPage({
           </a>
         </div>
       </div>
+
+      {invited != null && (
+        <p className="mt-4 rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">
+          {invited === "0"
+            ? "Everyone confirmed has already been invited to review."
+            : `Sent ${invited} review ${invited === "1" ? "invite" : "invites"}.`}
+        </p>
+      )}
+      {error === "not-over" && (
+        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Review invites can only be sent once the event has finished.
+        </p>
+      )}
 
       {/* Cards on phones — this is the screen an organiser opens at the door to
           look someone up, so the ticket number, status and check-in must be

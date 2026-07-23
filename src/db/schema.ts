@@ -105,6 +105,31 @@ export const registrations = pgTable("registrations", {
   // When the attendee was checked in at the event door. Null until they arrive;
   // set it and they count towards attendance.
   checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
+  // When the post-event review invitation email was sent, so the organiser can
+  // send invites without re-emailing people who already got one.
+  reviewInviteSentAt: timestamp("review_invite_sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// One post-event review per registration: a star rating and an optional
+// comment, left by the participant after the event via their ticket reference
+// (no account needed). Seen only by the organiser.
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  orgId: integer("org_id")
+    .notNull()
+    .references(() => orgs.id),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  // One review per registration — the ticket reference is the capability that
+  // authorises it, mirroring how /pay and /register/confirmed work.
+  registrationId: integer("registration_id")
+    .notNull()
+    .unique()
+    .references(() => registrations.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1–5 stars
+  comment: text("comment"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
