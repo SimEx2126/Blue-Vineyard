@@ -38,6 +38,18 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     if (p.kind === "charge") paymentByReg.set(p.registrationId, p.status);
   }
 
+  // Post-event reviews, so the export carries attendance and feedback alongside
+  // everything else the organiser needs, in one file.
+  const reviewRows = registrations.length
+    ? await db.query.reviews.findMany({
+        where: inArray(
+          schema.reviews.registrationId,
+          registrations.map((r) => r.id)
+        ),
+      })
+    : [];
+  const reviewByReg = new Map(reviewRows.map((rv) => [rv.registrationId, rv]));
+
   const header = [
     "ID",
     "Ticket no.",
@@ -56,6 +68,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     "Option",
     "Total",
     "Payment",
+    "Checked in",
+    "Rating",
+    "Review",
   ];
 
   const rows = registrations.map((r) => {
@@ -80,6 +95,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       csvCell(pricing.tier?.label),
       (r.amountCents / 100).toFixed(2),
       paymentByReg.get(r.id) ?? (r.amountCents === 0 ? "free" : ""),
+      r.checkedInAt ? r.checkedInAt.toISOString() : "",
+      csvCell(reviewByReg.get(r.id)?.rating),
+      csvCell(reviewByReg.get(r.id)?.comment),
     ].join(",");
   });
 
