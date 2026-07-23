@@ -46,10 +46,10 @@ export function ShareQrButton({ url, qrMarkup }: { url: string; qrMarkup: string
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="fixed left-1/2 top-1/2 z-30 w-72 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-200 bg-white p-4 shadow-xl">
+          <div className="fixed left-1/2 top-1/2 z-30 w-[22rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-200 bg-white p-4 shadow-xl">
           <p className="text-sm font-semibold text-zinc-900">Share this event</p>
           <div
-            className="mx-auto mt-3 w-44 rounded-lg border border-zinc-200 p-2 [&_svg]:h-auto [&_svg]:w-full"
+            className="mx-auto mt-3 w-72 max-w-full rounded-lg border border-zinc-200 p-3 [&_svg]:h-auto [&_svg]:w-full"
             dangerouslySetInnerHTML={{ __html: qrMarkup }}
           />
           <div className="mt-3 flex gap-2">
